@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .warning { background-color: #fff3cd; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 OAuth Fix Test</h1>
+    
+    <div class="section">
+        <h3>Current Status</h3>
+        <p><strong>URL:</strong> <span id="currentUrl"></span></p>
+        <p><strong>Has Code:</strong> <span id="hasCode"></span></p>
+        <p><strong>Session Flag:</strong> <span id="sessionFlag"></span></p>
+    </div>
+    
+    <div class="section">
+        <h3>Test Actions</h3>
+        <button onclick="testOAuthFlow()">Test Complete OAuth Flow</button>
+        <button onclick="clearSession()">Clear Session Storage</button>
+        <button onclick="checkStatus()">Check Current Status</button>
+    </div>
+    
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="debugLog" style="background: #f8f9fa; padding: 10px; border-radius: 3px; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry);
+            
+            const logDiv = document.getElementById('debugLog');
+            const logElement = document.createElement('div');
+            logElement.textContent = logEntry;
+            logDiv.appendChild(logElement);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus() {
+            document.getElementById('currentUrl').textContent = window.location.href;
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            document.getElementById('hasCode').textContent = code ? 'Yes' : 'No';
+            document.getElementById('sessionFlag').textContent = sessionStorage.getItem('oauth_callback_processed') || 'Not set';
+        }
+
+        function testOAuthFlow() {
+            log('🚀 Starting OAuth flow test...');
+            
+            // Clear any existing session data
+            sessionStorage.clear();
+            log('🧹 Cleared session storage');
+            
+            // Generate OAuth URL
+            const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+            const scopes = encodeURIComponent('data:read data:write bucket:read bucket:create viewables:read');
+            
+            // Generate PKCE parameters
+            const codeVerifier = generateCodeVerifier();
+            sessionStorage.setItem('oauth_code_verifier', codeVerifier);
+            log('🔑 Generated code verifier: ' + codeVerifier);
+            
+            generateCodeChallenge(codeVerifier).then(codeChallenge => {
+                const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+                
+                log('🔗 Generated OAuth URL');
+                log('🔄 Redirecting to OAuth...');
+                
+                // Open in same window
+                window.location.href = authUrl;
+            });
+        }
+
+        function generateCodeVerifier() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return btoa(String.fromCharCode.apply(null, array))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        async function generateCodeChallenge(verifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(verifier);
+            const digest = await crypto.subtle.digest('SHA-256', data);
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function clearSession() {
+            sessionStorage.clear();
+            localStorage.removeItem('zoyantra_credentials');
+            log('🧹 Cleared all session and local storage');
+            updateStatus();
+        }
+
+        function checkStatus() {
+            log('🔍 Checking current status...');
+            updateStatus();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (code) {
+                log('✅ OAuth code found: ' + code.substring(0, 20) + '...');
+                log('🔄 This should trigger the callback processing in the main app');
+            } else {
+                log('⚠️ No OAuth code found in URL');
+            }
+        }
+
+        // Initialize
+        updateStatus();
+        log('🚀 OAuth Fix Test initialized');
+        
+        // Auto-check if we have OAuth parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code) {
+            log('🔍 OAuth callback detected!');
+            log('Code: ' + code.substring(0, 20) + '...');
+            log('This should now be processed by the main app');
+        }
+    </script>
+</body>
+</html>

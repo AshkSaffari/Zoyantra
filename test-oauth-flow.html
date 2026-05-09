@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test OAuth Flow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #5a6fd8;
+        }
+        .url-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 OAuth Flow Test</h1>
+        <p>This page tests the complete OAuth flow to identify where the issue is.</p>
+        
+        <div>
+            <button class="button" onclick="testOAuthUrl()">Test OAuth URL Generation</button>
+            <button class="button" onclick="testOAuthRedirect()">Test OAuth Redirect</button>
+            <button class="button" onclick="testCallbackPage()">Test Callback Page</button>
+        </div>
+        
+        <div id="results" class="url-display" style="display: none;"></div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        function generateOAuthUrl() {
+            const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+            const redirectUri = 'http://localhost:3000/auth/callback.html';
+            const scope = 'data:read data:write account:read account:write user-profile:read';
+            
+            const baseUrl = 'https://developer.api.autodesk.com/authentication/v2/authorize';
+            const params = new URLSearchParams({
+                response_type: 'code',
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                scope: scope
+            });
+            
+            return `${baseUrl}?${params.toString()}`;
+        }
+
+        function testOAuthUrl() {
+            try {
+                const oauthUrl = generateOAuthUrl();
+                
+                console.log('🔗 Generated OAuth URL:', oauthUrl);
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+<span class="success">✅ OAuth URL Generated Successfully!</span>
+
+<strong>URL:</strong>
+${oauthUrl}
+
+<strong>Components:</strong>
+• Client ID: ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo
+• Redirect URI: http://localhost:3000/auth/callback.html
+• Scope: data:read data:write account:read account:write user-profile:read
+• Response Type: code
+
+<strong>Next Steps:</strong>
+1. Click "Test OAuth Redirect" to test the redirect
+2. Click "Test Callback Page" to verify the callback page works
+                `;
+                
+                // Hide any previous errors
+                document.getElementById('error').style.display = 'none';
+                
+            } catch (error) {
+                console.error('❌ Error generating OAuth URL:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function testOAuthRedirect() {
+            try {
+                const oauthUrl = generateOAuthUrl();
+                console.log('🔄 Redirecting to OAuth URL:', oauthUrl);
+                window.location.href = oauthUrl;
+            } catch (error) {
+                console.error('❌ Error redirecting to OAuth URL:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function testCallbackPage() {
+            try {
+                console.log('🔍 Testing callback page...');
+                window.open('http://localhost:3000/auth/callback.html', '_blank');
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+<span class="success">✅ Callback Page Test</span>
+
+<strong>Testing:</strong>
+• Opening callback page in new tab
+• Check if the page loads correctly
+• The callback page should show "Processing authentication..."
+
+<strong>Expected Behavior:</strong>
+• If you see "Processing authentication..." - callback page is working
+• If you see an error - there's an issue with the callback page
+                `;
+                
+            } catch (error) {
+                console.error('❌ Error testing callback page:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            testOAuthUrl();
+        };
+    </script>
+</body>
+</html>

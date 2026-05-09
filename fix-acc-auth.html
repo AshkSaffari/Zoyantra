@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix ACC Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix ACC Authentication</h1>
+        <p>This tool will help you fix the ACC (Autodesk Construction Cloud) authentication issues that are preventing the project browser from working.</p>
+        
+        <div id="status" class="status info">
+            Ready to fix authentication issues...
+        </div>
+        
+        <h2>Step 1: Clear Authentication Data</h2>
+        <p>This will clear all stored authentication tokens and force a fresh login.</p>
+        <button class="button danger" onclick="clearAuth()">Clear All Authentication Data</button>
+        
+        <h2>Step 2: Check Current Status</h2>
+        <p>Check what authentication data is currently stored.</p>
+        <button class="button" onclick="checkStatus()">Check Authentication Status</button>
+        
+        <h2>Step 3: Test ACC Connection</h2>
+        <p>Test if the ACC connection is working after clearing data.</p>
+        <button class="button" onclick="testConnection()">Test ACC Connection</button>
+        
+        <h2>Step 4: Reload Application</h2>
+        <p>After clearing authentication, reload the application to start fresh.</p>
+        <button class="button" onclick="reloadApp()">Reload Application</button>
+        
+        <div id="output" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function addOutput(message) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent += message + '\n';
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+        
+        function clearAuth() {
+            try {
+                updateStatus('Clearing authentication data...', 'info');
+                
+                // Clear localStorage
+                localStorage.clear();
+                addOutput('✅ localStorage cleared');
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                addOutput('✅ sessionStorage cleared');
+                
+                // Clear any ACC-specific data
+                const accKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('acc') || key.includes('autodesk') || key.includes('zoyantra'))) {
+                        accKeys.push(key);
+                    }
+                }
+                
+                accKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                    addOutput(`✅ Removed ${key}`);
+                });
+                
+                updateStatus('Authentication data cleared successfully!', 'success');
+                addOutput('🎉 All authentication data has been cleared. You can now reload the application.');
+                
+            } catch (error) {
+                updateStatus('Error clearing authentication data: ' + error.message, 'error');
+                addOutput('❌ Error: ' + error.message);
+            }
+        }
+        
+        function checkStatus() {
+            try {
+                updateStatus('Checking authentication status...', 'info');
+                addOutput('🔍 Checking stored authentication data...');
+                
+                const credentials = JSON.parse(localStorage.getItem('zoyantra_credentials') || '{}');
+                addOutput('📋 Current credentials:');
+                addOutput(`  - Has access token: ${!!credentials.accessToken}`);
+                addOutput(`  - Has refresh token: ${!!credentials.refreshToken}`);
+                addOutput(`  - Has three-leg token: ${!!credentials.threeLegToken}`);
+                addOutput(`  - Token expiry: ${credentials.expiresAt || 'Unknown'}`);
+                
+                if (credentials.accessToken) {
+                    const now = new Date();
+                    const expiry = new Date(credentials.expiresAt);
+                    const isExpired = now > expiry;
+                    addOutput(`  - Token expired: ${isExpired}`);
+                }
+                
+                updateStatus('Status check complete', 'success');
+                
+            } catch (error) {
+                updateStatus('Error checking status: ' + error.message, 'error');
+                addOutput('❌ Error: ' + error.message);
+            }
+        }
+        
+        function testConnection() {
+            try {
+                updateStatus('Testing ACC connection...', 'info');
+                addOutput('🔗 Testing ACC connection...');
+                
+                // Test if we can make a basic request
+                fetch('https://developer.api.autodesk.com/project/v1/hubs', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + (JSON.parse(localStorage.getItem('zoyantra_credentials') || '{}').accessToken || 'no-token'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        addOutput('✅ ACC connection successful!');
+                        updateStatus('ACC connection is working!', 'success');
+                    } else {
+                        addOutput(`❌ ACC connection failed: ${response.status} ${response.statusText}`);
+                        updateStatus('ACC connection failed - authentication required', 'error');
+                    }
+                })
+                .catch(error => {
+                    addOutput(`❌ ACC connection error: ${error.message}`);
+                    updateStatus('ACC connection failed - network error', 'error');
+                });
+                
+            } catch (error) {
+                updateStatus('Error testing connection: ' + error.message, 'error');
+                addOutput('❌ Error: ' + error.message);
+            }
+        }
+        
+        function reloadApp() {
+            updateStatus('Reloading application...', 'info');
+            addOutput('🔄 Reloading application...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

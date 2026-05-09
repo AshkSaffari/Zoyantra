@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Authentication Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #e74c3c;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background-color: #c0392b;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #e67e22;
+            font-weight: bold;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Authentication Data</h1>
+        <p>This tool will clear all stored authentication data to resolve OAuth errors.</p>
+        
+        <div>
+            <button class="button" onclick="clearAuthData()">Clear Authentication Data</button>
+            <button class="button" onclick="clearAllData()">Clear ALL App Data</button>
+            <button class="button" onclick="window.close()">Close</button>
+        </div>
+        
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+            logDiv.textContent += message + '\n';
+            console.log(message);
+        }
+
+        function clearAuthData() {
+            log('🧹 Clearing authentication data...');
+            
+            // Clear all localStorage items related to authentication
+            const authKeys = [
+                'zoyantra_credentials',
+                'cewa_credentials', 
+                'zoyantra_access_token',
+                'zoyantra_refresh_token',
+                'zoyantra_token_expiry',
+                'zoyantra_project_selection',
+                'zoyantra_hub_selection',
+                'zoyantra_three_leg_token',
+                'zoyantra_two_legged_token'
+            ];
+
+            // Clear specific auth keys
+            authKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    log(`✅ Cleared: ${key}`);
+                }
+            });
+
+            // Clear any keys that start with oauth_processing_
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('oauth_processing_')) {
+                    localStorage.removeItem(key);
+                    log(`✅ Cleared: ${key}`);
+                }
+            });
+
+            // Clear any keys that start with zoyantra_
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('zoyantra_')) {
+                    localStorage.removeItem(key);
+                    log(`✅ Cleared: ${key}`);
+                }
+            });
+
+            log('✅ Authentication data cleared successfully!');
+            log('🔄 Please refresh the main app and try signing in again.');
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ WARNING: This will clear ALL data from the app including timesheets, projects, expenses, etc. This action cannot be undone. Are you sure?')) {
+                log('❌ Clear all data cancelled by user');
+                return;
+            }
+
+            log('🧹 Clearing ALL app data...');
+            
+            // Clear all localStorage
+            localStorage.clear();
+            
+            log('✅ ALL app data cleared successfully!');
+            log('🔄 Please refresh the main app and start fresh.');
+        }
+    </script>
+</body>
+</html>

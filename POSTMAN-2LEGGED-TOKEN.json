@@ -1,0 +1,175 @@
+{
+  "info": {
+    "name": "ACC 2-Legged Token Generator",
+    "description": "Collection to automatically get 2-legged tokens for ACC API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get 2-Legged Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          },
+          {
+            "key": "Authorization",
+            "value": "Basic REPLACE_WITH_BASE64_clientId_colon_clientSecret"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "client_credentials",
+              "type": "text"
+            },
+            {
+              "key": "scope",
+              "value": "data:read data:write account:read account:write",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://developer.api.autodesk.com/authentication/v2/token",
+          "protocol": "https",
+          "host": [
+            "developer",
+            "api",
+            "autodesk",
+            "com"
+          ],
+          "path": [
+            "authentication",
+            "v2",
+            "token"
+          ]
+        },
+        "description": "Automatically get a 2-legged token for ACC API operations"
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic REPLACE_WITH_BASE64_clientId_colon_clientSecret"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "data:read data:write account:read account:write",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "https://developer.api.autodesk.com/authentication/v2/token",
+              "protocol": "https",
+              "host": [
+                "developer",
+                "api",
+                "autodesk",
+                "com"
+              ],
+              "path": [
+                "authentication",
+                "v2",
+                "token"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"access_token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IlU3c0c...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"scope\": \"data:read data:write account:read account:write\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Test Token with Project Image Upload",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "chunk",
+              "type": "file",
+              "src": "path/to/your/image.jpg"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://developer.api.autodesk.com/hq/v1/accounts/{{account_id}}/projects/{{project_id}}/image",
+          "protocol": "https",
+          "host": [
+            "developer",
+            "api",
+            "autodesk",
+            "com"
+          ],
+          "path": [
+            "hq",
+            "v1",
+            "accounts",
+            "{{account_id}}",
+            "projects",
+            "{{project_id}}",
+            "image"
+          ]
+        },
+        "description": "Test the token by uploading a project image"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "account_id",
+      "value": "your_account_id_here",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "your_project_id_here",
+      "type": "string"
+    }
+  ]
+}
+

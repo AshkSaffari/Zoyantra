@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuSign Authentication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .endpoint {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 DocuSign Authentication Test</h1>
+        
+        <div id="status" class="status info">
+            Checking server status...
+        </div>
+
+        <div class="endpoint">
+            <strong>Server:</strong> http://localhost:3001<br>
+            <strong>DocuSign Auth:</strong> <a href="http://localhost:3001/docusign/auth" target="_blank">http://localhost:3001/docusign/auth</a><br>
+            <strong>Status Endpoint:</strong> <a href="http://localhost:3001/api/docusign/status" target="_blank">http://localhost:3001/api/docusign/status</a>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="checkStatus()">Check Status</button>
+            <button onclick="authenticateDocuSign()">Authenticate DocuSign</button>
+            <button onclick="authenticateAutodesk()">Authenticate Autodesk</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:3001/api/health');
+                const data = await response.json();
+                
+                document.getElementById('status').innerHTML = `
+                    <strong>Server Status:</strong> ${data.status}<br>
+                    <strong>DocuSign Connected:</strong> ${data.docuSignConnected ? '✅ Yes' : '❌ No'}<br>
+                    <strong>Autodesk Connected:</strong> ${data.autodeskConnected ? '✅ Yes' : '❌ No'}<br>
+                    <strong>Auth Type:</strong> ${data.authType}
+                `;
+                document.getElementById('status').className = 'status ' + (data.status === 'OK' ? 'success' : 'error');
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ Server not responding: ' + error.message;
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        function authenticateDocuSign() {
+            window.open('http://localhost:3001/docusign/auth', '_blank');
+        }
+
+        function authenticateAutodesk() {
+            window.open('http://localhost:3001/autodesk/auth', '_blank');
+        }
+
+        // Check status on page load
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

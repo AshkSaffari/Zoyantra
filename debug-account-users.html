@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Account Users - UID Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .user-card {
+            background: white;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .uid {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .api-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Account Users - UID Test</h1>
+        
+        <div>
+            <button class="button" onclick="testHQAPI()">Test HQ API (Account Users with UID)</button>
+            <button class="button" onclick="testProjectAPI()">Test Project Users API</button>
+            <button class="button" onclick="testAdminAPI()">Test Construction Admin API</button>
+            <button class="button" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const HUB_ID = 'b.0e1aa02b-93b7-4d4a-b2c6-bf6855d10c18'; // Your hub ID
+        
+        async function makeRequest(url, method = 'GET') {
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                throw new Error(`Request failed: ${error.message}`);
+            }
+        }
+        
+        async function testHQAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">Loading HQ API (Account Users)...</div>';
+            
+            try {
+                const url = `https://developer.api.autodesk.com/hq/v1/accounts/${HUB_ID}/users`;
+                console.log('📡 Calling HQ API:', url);
+                
+                const response = await makeRequest(url);
+                console.log('✅ HQ API Response:', response);
+                
+                let html = `
+                    <div class="api-section">
+                        <h2>✅ HQ API Results (Account Users with UID)</h2>
+                        <p><strong>Endpoint:</strong> <code>${url}</code></p>
+                        <p><strong>Total Users:</strong> ${response.length || 0}</p>
+                    </div>
+                `;
+                
+                if (response && response.length > 0) {
+                    response.slice(0, 10).forEach(user => {
+                        html += `
+                            <div class="user-card">
+                                <strong>${user.name || 'N/A'}</strong><br>
+                                <strong>Email:</strong> ${user.email || 'N/A'}<br>
+                                <strong class="uid">UID: ${user.uid || 'N/A'}</strong><br>
+                                <strong>ID:</strong> ${user.id || 'N/A'}<br>
+                                <strong>Company:</strong> ${user.company_name || 'N/A'}<br>
+                                <strong>Status:</strong> ${user.status || 'N/A'}
+                            </div>
+                        `;
+                    });
+                    
+                    if (response.length > 10) {
+                        html += `<p><em>...and ${response.length - 10} more users</em></p>`;
+                    }
+                    
+                    html += `<pre>${JSON.stringify(response.slice(0, 3), null, 2)}</pre>`;
+                } else {
+                    html += '<p>No users found</p>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="api-section" style="background: #ffebee; border-left-color: #f44336;">
+                        <h2>❌ HQ API Error</h2>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+                console.error('❌ HQ API Error:', error);
+            }
+        }
+        
+        async function testProjectAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">Loading Project Users API...</div>';
+            
+            try {
+                const PROJECT_ID = 'b.5fec8f39-7a15-48c4-973a-789cc5906a63'; // Your project ID
+                const url = `https://developer.api.autodesk.com/construction/admin/v1/hubs/${HUB_ID}/projects/${PROJECT_ID}/users`;
+                console.log('📡 Calling Project Users API:', url);
+                
+                const response = await makeRequest(url);
+                console.log('✅ Project API Response:', response);
+                
+                let html = `
+                    <div class="api-section">
+                        <h2>✅ Project Users API Results</h2>
+                        <p><strong>Endpoint:</strong> <code>${url}</code></p>
+                        <p><strong>Total Users:</strong> ${(response.results || response.data || []).length}</p>
+                    </div>
+                `;
+                
+                const users = response.results || response.data || [];
+                if (users.length > 0) {
+                    users.slice(0, 10).forEach(user => {
+                        html += `
+                            <div class="user-card">
+                                <strong>${user.name || 'N/A'}</strong><br>
+                                <strong>Email:</strong> ${user.email || 'N/A'}<br>
+                                <strong>ID:</strong> ${user.id || 'N/A'}<br>
+                                <strong>Company:</strong> ${user.companyName || 'N/A'}<br>
+                                <strong class="uid">UID: ${user.uid || 'N/A'}</strong><br>
+                                <strong>Status:</strong> ${user.status || 'N/A'}
+                            </div>
+                        `;
+                    });
+                    
+                    if (users.length > 10) {
+                        html += `<p><em>...and ${users.length - 10} more users</em></p>`;
+                    }
+                    
+                    html += `<pre>${JSON.stringify(users.slice(0, 3), null, 2)}</pre>`;
+                } else {
+                    html += '<p>No users found</p>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="api-section" style="background: #ffebee; border-left-color: #f44336;">
+                        <h2>❌ Project Users API Error</h2>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+                console.error('❌ Project Users API Error:', error);
+            }
+        }
+        
+        async function testAdminAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">Loading Construction Admin API...</div>';
+            
+            try {
+                const PROJECT_ID = 'b.5fec8f39-7a15-48c4-973a-789cc5906a63';
+                const url = `https://developer.api.autodesk.com/construction/admin/v1/projects/${PROJECT_ID}/users`;
+                console.log('📡 Calling Admin API:', url);
+                
+                const response = await makeRequest(url);
+                console.log('✅ Admin API Response:', response);
+                
+                let html = `
+                    <div class="api-section">
+                        <h2>✅ Construction Admin API Results</h2>
+                        <p><strong>Endpoint:</strong> <code>${url}</code></p>
+                        <p><strong>Total Users:</strong> ${(response.results || response.data || []).length}</p>
+                    </div>
+                `;
+                
+                const users = response.results || response.data || [];
+                if (users.length > 0) {
+                    users.slice(0, 10).forEach(user => {
+                        html += `
+                            <div class="user-card">
+                                <strong>${user.name || 'N/A'}</strong><br>
+                                <strong>Email:</strong> ${user.email || 'N/A'}<br>
+                                <strong>ID:</strong> ${user.id || 'N/A'}<br>
+                                <strong class="uid">UID: ${user.uid || 'N/A'}</strong><br>
+                                <strong>Status:</strong> ${user.status || 'N/A'}
+                            </div>
+                        `;
+                    });
+                    
+                    if (users.length > 10) {
+                        html += `<p><em>...and ${users.length - 10} more users</em></p>`;
+                    }
+                    
+                    html += `<pre>${JSON.stringify(users.slice(0, 3), null, 2)}</pre>`;
+                } else {
+                    html += '<p>No users found</p>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="api-section" style="background: #ffebee; border-left-color: #f44336;">
+                        <h2>❌ Construction Admin API Error</h2>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+                console.error('❌ Admin API Error:', error);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
+

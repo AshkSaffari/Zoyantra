@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverted to Show ALL Projects - APAC Working</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .highlight {
+            background-color: #e6f3ff;
+            border: 1px solid #b3d9ff;
+            color: #0066cc;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Reverted to Show ALL Projects - APAC Working Again!</h1>
+        <p>I've reverted the ReportTab.js back to the working approach that shows expenses for ALL projects instead of just selected ones.</p>
+    </div>
+
+    <div class="container">
+        <h2>🔄 What I Changed Back</h2>
+        
+        <div class="success">
+            <h3>✅ Reverted to Working Approach</h3>
+            <p>Changed from "selected projects only" back to "all projects" because:</p>
+            <ul>
+                <li>APAC hub was working when showing ALL projects</li>
+                <li>When you select only one project, it wasn't showing any expenses</li>
+                <li>This approach was previously working for you</li>
+            </ul>
+        </div>
+
+        <div class="highlight">
+            <h3>🔧 Key Changes Made</h3>
+            <ol>
+                <li><strong>Load ALL Projects:</strong> Changed from loading only selected projects to loading all projects</li>
+                <li><strong>Display ALL Projects:</strong> Show expenses for all projects in the hub</li>
+                <li><strong>Project Selection:</strong> Project selection now only affects the report generation, not expense loading</li>
+                <li><strong>Better Debugging:</strong> Added more detailed logging to help troubleshoot</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 How It Works Now</h2>
+        
+        <div class="code-block">
+// Load expenses for ALL projects (not just selected)
+const loadExpensesForAllProjects = async () => {
+  // Load expenses for each project in the hub
+  for (const project of projects) {
+    const expenses = await AccService.getExpenses(project.id);
+    expensesData[project.id] = expenses || [];
+  }
+};
+
+// Display expenses for ALL projects
+{projects.map((project) => {
+  const expenses = projectExpenses[project.id] || [];
+  // Show project and its expenses
+})}
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ Important Note</h3>
+            <p>Project selection checkboxes now only affect the PDF report generation, not the expense display. All projects will show their expenses regardless of selection status.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🎯 What You'll See Now</h2>
+        
+        <div class="highlight">
+            <h3>✅ Expense Summary Section</h3>
+            <p>Shows a grid with ALL projects in the hub, each displaying:</p>
+            <ul>
+                <li>Project name</li>
+                <li>Total expenses amount</li>
+                <li>Number of expenses</li>
+            </ul>
+        </div>
+
+        <div class="highlight">
+            <h3>✅ Individual Project Sections</h3>
+            <p>Each project in the hub gets its own section showing:</p>
+            <ul>
+                <li>Project name and total</li>
+                <li>List of individual expenses</li>
+                <li>File attachment capability for each expense</li>
+                <li>Upload progress indicators</li>
+            </ul>
+        </div>
+
+        <div class="highlight">
+            <h3>✅ Grand Total</h3>
+            <p>Shows the total expenses across ALL projects in the hub.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 Debug Information</h2>
+        <p>The component now includes detailed logging. Check your browser console to see:</p>
+        <div class="code-block">
+console.log('💰 Loading expenses for project: ProjectName (projectId)');
+console.log('✅ Found X expenses for project ProjectName');
+console.log('📊 All expenses loaded for all projects:', expensesData);
+console.log('📊 Project: ProjectName (projectId)');
+console.log('📊 Expenses: X', expenses);
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🚀 Expected Result</h2>
+        
+        <div class="success">
+            <h3>✅ APAC Hub Should Work Again!</h3>
+            <p>Now when you access the APAC hub, you should see:</p>
+            <ul>
+                <li>✅ All projects in the hub displayed</li>
+                <li>✅ Expenses for each project (if they exist)</li>
+                <li>✅ Project totals and grand total</li>
+                <li>✅ File attachment functionality</li>
+                <li>✅ No more "Unknown Project" labels</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔧 If It Still Doesn't Work</h2>
+        <p>If you're still not seeing expenses in APAC hub, check the browser console for:</p>
+        <ul>
+            <li>Error messages during expense loading</li>
+            <li>Whether projects are being found</li>
+            <li>Whether Cost Management is enabled for projects</li>
+            <li>Any 404 or permission errors</li>
+        </ul>
+        <p>Use the APAC debug tools I created earlier if needed.</p>
+    </div>
+</body>
+</html>

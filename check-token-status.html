@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Token Status</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .status-section {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔑 Check Token Status</h1>
+            <p>Diagnose and fix authentication issues</p>
+        </div>
+        
+        <div class="content">
+            <div class="status-section">
+                <h3>🔧 Token Diagnostics</h3>
+                <button onclick="checkTokenStatus()">🔍 Check Token Status</button>
+                <button onclick="refreshToken()">🔄 Refresh Token</button>
+                <button onclick="testToken()">🧪 Test Token</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        function checkTokenStatus() {
+            addResult('info', '🔍 Checking Token Status', 'Analyzing stored credentials...');
+            
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                
+                // Check if credentials exist
+                if (!credentials.threeLegToken) {
+                    addResult('error', '❌ No Access Token', 'No access token found in localStorage');
+                    addResult('info', 'Solution', 'Please authenticate in the main app first');
+                    return;
+                }
+                
+                addResult('success', '✅ Access Token Found', `Token: ${credentials.threeLegToken.substring(0, 20)}...`);
+                
+                // Check refresh token
+                if (credentials.refreshToken) {
+                    addResult('success', '✅ Refresh Token Found', `Refresh token available`);
+                } else {
+                    addResult('warning', '⚠️ No Refresh Token', 'No refresh token found - may need to re-authenticate');
+                }
+                
+                // Check expiry
+                if (credentials.tokenExpiryTime) {
+                    const expiryTime = new Date(credentials.tokenExpiryTime);
+                    const now = new Date();
+                    const timeUntilExpiry = expiryTime.getTime() - now.getTime();
+                    const minutesUntilExpiry = Math.floor(timeUntilExpiry / (1000 * 60));
+                    
+                    if (timeUntilExpiry > 0) {
+                        if (minutesUntilExpiry < 5) {
+                            addResult('warning', '⚠️ Token Expires Soon', `Token expires in ${minutesUntilExpiry} minutes`);
+                        } else {
+                            addResult('success', '✅ Token Valid', `Token expires in ${minutesUntilExpiry} minutes`);
+                        }
+                    } else {
+                        addResult('error', '❌ Token Expired', `Token expired ${Math.abs(minutesUntilExpiry)} minutes ago`);
+                    }
+                } else {
+                    addResult('warning', '⚠️ No Expiry Info', 'No token expiry information found');
+                }
+                
+                // Check other credentials
+                if (credentials.clientId) {
+                    addResult('info', 'Client ID', credentials.clientId);
+                }
+                if (credentials.clientSecret) {
+                    addResult('info', 'Client Secret', 'Present (hidden)');
+                }
+                
+            } catch (error) {
+                addResult('error', '❌ Error Reading Credentials', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function refreshToken() {
+            addResult('info', '🔄 Attempting Token Refresh', 'Trying to refresh access token...');
+            
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                
+                if (!credentials.refreshToken) {
+                    addResult('error', '❌ No Refresh Token', 'Cannot refresh - no refresh token available');
+                    addResult('info', 'Solution', 'Please re-authenticate in the main app');
+                    return;
+                }
+                
+                addResult('info', '🔄 Sending Refresh Request', 'Using refresh token to get new access token...');
+                
+                const refreshResponse = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'refresh_token',
+                        client_id: credentials.clientId || 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                        client_secret: credentials.clientSecret || 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                        refresh_token: credentials.refreshToken
+                    })
+                });
+                
+                if (refreshResponse.ok) {
+                    const newTokenData = await refreshResponse.json();
+                    addResult('success', '✅ Token Refresh Successful', 'New access token received');
+                    
+                    const newCredentials = {
+                        ...credentials,
+                        threeLegToken: newTokenData.access_token,
+                        refreshToken: newTokenData.refresh_token,
+                        tokenExpiryTime: new Date(Date.now() + (newTokenData.expires_in * 1000)).toISOString()
+                    };
+                    
+                    localStorage.setItem('credentials', JSON.stringify(newCredentials));
+                    addResult('success', '✅ Credentials Updated', `New token expires: ${newCredentials.tokenExpiryTime}`);
+                    
+                } else {
+                    const errorText = await refreshResponse.text();
+                    addResult('error', '❌ Token Refresh Failed', `Status: ${refreshResponse.status}\nError: ${errorText}`);
+                    
+                    if (refreshResponse.status === 401) {
+                        addResult('info', 'Solution', 'Refresh token may be expired. Please re-authenticate in the main app.');
+                    }
+                }
+                
+            } catch (error) {
+                addResult('error', '❌ Refresh Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function testToken() {
+            addResult('info', '🧪 Testing Token', 'Testing access token with ACC API...');
+            
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                
+                if (!credentials.threeLegToken) {
+                    addResult('error', '❌ No Token to Test', 'No access token found');
+                    return;
+                }
+                
+                // Test with a simple API call
+                const testUrl = 'https://developer.api.autodesk.com/project/v1/hubs';
+                const response = await fetch(testUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${credentials.threeLegToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('success', '✅ Token Works!', `API call successful - found ${data.data?.length || 0} hubs`);
+                } else {
+                    const errorText = await response.text();
+                    addResult('error', '❌ Token Test Failed', `Status: ${response.status}\nError: ${errorText}`);
+                    
+                    if (response.status === 401) {
+                        addResult('info', 'Solution', 'Token is invalid or expired. Try refreshing or re-authenticate.');
+                    }
+                }
+                
+            } catch (error) {
+                addResult('error', '❌ Test Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function displayResults() {
+            // Results are displayed as they're added
+        }
+
+        // Auto-check on page load
+        window.onload = function() {
+            checkTokenStatus();
+        };
+    </script>
+</body>
+</html>

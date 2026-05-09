@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test UID API for CEWA</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #45a049; }
+        .user { background: #f9f9f9; padding: 10px; margin: 5px 0; border-left: 4px solid #4CAF50; }
+        .uid { font-weight: bold; color: #4CAF50; font-size: 14px; }
+        pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .error { background: #ffebee; border-left-color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test UID API for CEWA Hub</h1>
+        <button onclick="testUID()">Get UIDs from HQ API</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function get2LegToken() {
+            try {
+                // Call backend server directly on port 3001
+                const response = await fetch('http://localhost:3001/api/auth/two-legged', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.access_token;
+            } catch (error) {
+                console.error('Server call failed:', error);
+                throw new Error('Cannot connect to backend server. Make sure the server is running on http://localhost:3001');
+            }
+        }
+        
+        async function testUID() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Loading...';
+            
+            try {
+                // Get 2-legged token
+                const token = await get2LegToken();
+                console.log('Token obtained:', token.substring(0, 20) + '...');
+                
+                // Call HQ API with search endpoint
+                const hubId = 'ddc5f6e2-9ddc-475e-82ed-b05da4ac18c2';
+                const url = `https://developer.api.autodesk.com/hq/v1/accounts/${hubId}/users/search?limit=200`;
+                console.log('Calling:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const users = await response.json();
+                console.log('Users:', users);
+                
+                let html = `<h2>✅ Found ${users.length} Users</h2>`;
+                
+                users.forEach(user => {
+                    html += `
+                        <div class="user">
+                            <strong>${user.name || 'N/A'}</strong><br>
+                            Email: ${user.email || 'N/A'}<br>
+                            <span class="uid">UID: ${user.uid || 'N/A'}</span><br>
+                            ID: ${user.id || 'N/A'}<br>
+                            Status: ${user.status || 'N/A'}
+                        </div>
+                    `;
+                });
+                
+                html += `<pre>${JSON.stringify(users.slice(0, 5), null, 2)}</pre>`;
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error"><h2>❌ Error</h2><p>${error.message}</p></div>`;
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
+

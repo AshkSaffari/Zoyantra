@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoyantra - Authentication Callback</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Zoyantra</h1>
+        <p id="status">Processing authentication...</p>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        console.log('🔍 OAuth Callback Debug:');
+        console.log('  Full URL:', window.location.href);
+        console.log('  Search params:', window.location.search);
+        console.log('  Code:', code ? 'Present' : 'Missing');
+        console.log('  Error:', error || 'None');
+        console.log('  Error Description:', errorDescription || 'None');
+
+        if (error) {
+            // Handle OAuth error
+            console.error('❌ OAuth Error:', error, errorDescription);
+            document.getElementById('status').textContent = 'Authentication failed';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = `Error: ${error}${errorDescription ? ' - ' + errorDescription : ''}`;
+        } else if (code) {
+            // Success - redirect to main app with code
+            console.log('✅ OAuth callback received code:', code);
+            console.log('🔄 Redirecting to main app with code...');
+            document.getElementById('status').textContent = 'Authentication successful! Redirecting...';
+            
+            // Clear any existing callback processed flag
+            sessionStorage.removeItem('oauth_callback_processed');
+            
+            // Immediate redirect to main app with code
+            console.log('🔄 Redirecting immediately to main app...');
+            window.location.href = `/?code=${code}`;
+        } else {
+            // No code or error - redirect to main app
+            console.warn('⚠️ No authorization code received');
+            document.getElementById('status').textContent = 'No authorization code received. Redirecting...';
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

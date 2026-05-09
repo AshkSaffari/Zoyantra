@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Region Detection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .hub-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .hub-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+        .region-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        .region-apac {
+            background-color: #10b981;
+        }
+        .region-us {
+            background-color: #3b82f6;
+        }
+        .region-unknown {
+            background-color: #6b7280;
+        }
+        .flag {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+        .test-button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .test-button:hover {
+            background-color: #2563eb;
+        }
+        .explanation {
+            background-color: #fef3c7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Hub Region Detection Test</h1>
+        
+        <div class="explanation">
+            <h3>🆕 NEW DYNAMIC APPROACH (No Hardcoding):</h3>
+            <ul>
+                <li><strong>1st Priority:</strong> Use <code>hub.attributes.region</code> from ACC API</li>
+                <li><strong>2nd Priority:</strong> Analyze hub ID for region indicators</li>
+                <li><strong>3rd Priority:</strong> Pattern matching from hub name (fallback)</li>
+                <li><strong>✅ No hardcoded hub names!</strong></li>
+            </ul>
+        </div>
+
+        <button class="test-button" onclick="testRegionDetection()">🔄 Test Region Detection</button>
+
+        <div id="results">
+            <h2>Hub Region Detection Results:</h2>
+            <div id="hub-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Copy the exact logic from AccService_old.js (NEW DYNAMIC VERSION)
+        function detectHubRegion(hubName, hubData = null) {
+            try {
+                // If hubData is provided, use the region from the API response
+                if (hubData && hubData.attributes && hubData.attributes.region) {
+                    const region = hubData.attributes.region.toUpperCase();
+                    console.log(`🎯 Hub region from API: ${hubData.attributes.name} -> ${region}`);
+                    return region;
+                }
+                
+                // If we have hub data but no region field, try to get it from the hub ID or other metadata
+                if (hubData && hubData.id) {
+                    const hubId = hubData.id;
+                    console.log(`🔍 Analyzing hub ID for region: ${hubId}`);
+                    
+                    // Check if hub ID contains region indicators
+                    if (hubId.includes('apac') || hubId.includes('asia')) {
+                        console.log('🌏 Hub ID indicates APAC region');
+                        return 'APAC';
+                    }
+                    if (hubId.includes('us') || hubId.includes('america')) {
+                        console.log('🇺🇸 Hub ID indicates US region');
+                        return 'US';
+                    }
+                }
+                
+                // Fallback: Get hub name from parameter
+                const name = hubName || '';
+                console.log('🔍 Detecting hub region for hub:', name);
+                
+                // Generic pattern matching as last resort
+                const lowerName = name.toLowerCase().trim();
+                
+                // Check for APAC indicators
+                const apacIndicators = [
+                    'apac', 'asia', 'australia', 'singapore', 'japan', 'china', 'india', 'korea',
+                    'new zealand', 'malaysia', 'thailand', 'vietnam',
+                    'philippines', 'indonesia', 'hong kong', 'taiwan', 'south korea'
+                ];
+                
+                const isAPAC = apacIndicators.some(indicator => 
+                    lowerName.includes(indicator.toLowerCase())
+                );
+                
+                if (isAPAC) {
+                    console.log('🌏 Detected APAC hub from name pattern:', name);
+                    return 'APAC';
+                }
+                
+                // Check for US indicators
+                const usIndicators = ['usa', 'united states', 'america', 'north america'];
+                const isUS = usIndicators.some(indicator => 
+                    lowerName.includes(indicator.toLowerCase())
+                );
+                
+                if (isUS) {
+                    console.log('🇺🇸 Detected US hub from name pattern:', name);
+                    return 'US';
+                }
+                
+                // Default to US for unknown regions
+                console.log('🇺🇸 Defaulting to US hub for:', name);
+                return 'US';
+            } catch (error) {
+                console.warn('⚠️ Error detecting hub region, defaulting to US:', error);
+                return 'US';
+            }
+        }
+
+        function getRegionInfo(region) {
+            // Map ACC API regions to display info
+            const regionMappings = {
+                'US': { flag: '🇺🇸', name: 'United States', dataCenter: 'US East/West' },
+                'AUS': { flag: '🇦🇺', name: 'Australia', dataCenter: 'AWS Sydney' },
+                'JPN': { flag: '🇯🇵', name: 'Japan', dataCenter: 'AWS Tokyo' },
+                'IND': { flag: '🇮🇳', name: 'India', dataCenter: 'AWS Mumbai' },
+                'DEU': { flag: '🇩🇪', name: 'Germany', dataCenter: 'AWS Frankfurt' },
+                'GBR': { flag: '🇬🇧', name: 'United Kingdom', dataCenter: 'AWS London' },
+                'CAN': { flag: '🇨🇦', name: 'Canada', dataCenter: 'AWS Central' },
+                'EMEA': { flag: '🇪🇺', name: 'Europe', dataCenter: 'AWS Ireland' }
+            };
+            
+            const regionInfo = regionMappings[region] || { flag: '🇺🇸', name: 'United States', dataCenter: 'US East/West' };
+            
+            return {
+                region: region,
+                flag: regionInfo.flag,
+                name: regionInfo.name,
+                dataCenter: regionInfo.dataCenter
+            };
+        }
+
+        function testRegionDetection() {
+            // Simulate real hub data from ACC API with correct region values
+            const testHubs = [
+                {
+                    name: 'us CEWA SI',
+                    id: 'b.cewa-si-aus-123',
+                    attributes: { region: 'AUS' }  // Australia region from ACC API
+                },
+                {
+                    name: 'us Arkance ANZ',
+                    id: 'b.arkance-us-456',
+                    attributes: { region: 'US' }   // US region from ACC API
+                },
+                {
+                    name: 'us ARKANCE ANZ',
+                    id: 'b.arkance-us-789',
+                    attributes: { region: 'US' }   // US region from ACC API
+                },
+                {
+                    name: 'ARKANCE ANZ',
+                    id: 'b.arkance-us-101',
+                    attributes: { region: 'US' }   // US region from ACC API
+                },
+                {
+                    name: 'CEWA SI',
+                    id: 'b.cewa-aus-202',
+                    attributes: { region: 'AUS' }  // Australia region from ACC API
+                },
+                {
+                    name: 'us Test Hub',
+                    id: 'b.test-us-303',
+                    attributes: { region: 'US' }   // US region from ACC API
+                },
+                {
+                    name: 'Australia Hub',
+                    id: 'b.australia-aus-404',
+                    attributes: { region: 'AUS' }  // Australia region from ACC API
+                },
+                {
+                    name: 'Japan Hub',
+                    id: 'b.japan-jpn-505',
+                    attributes: { region: 'JPN' }  // Japan region from ACC API
+                }
+            ];
+
+            const resultsDiv = document.getElementById('hub-list');
+            resultsDiv.innerHTML = '';
+
+            testHubs.forEach(hubData => {
+                const region = detectHubRegion(hubData.name, hubData);
+                const regionInfo = getRegionInfo(region);
+                
+                const hubDiv = document.createElement('div');
+                hubDiv.className = 'hub-item';
+                
+                hubDiv.innerHTML = `
+                    <div>
+                        <div class="hub-name">${hubData.name}</div>
+                        <div style="color: #666; font-size: 14px;">
+                            ${regionInfo.flag} ${regionInfo.name} • ${regionInfo.dataCenter} • ${region}
+                        </div>
+                        <div style="color: #999; font-size: 12px; margin-top: 4px;">
+                            ID: ${hubData.id} | API Region: ${hubData.attributes.region}
+                        </div>
+                    </div>
+                    <div class="region-badge region-${region.toLowerCase()}">
+                        ${regionInfo.flag} ${region}
+                    </div>
+                `;
+                
+                resultsDiv.appendChild(hubDiv);
+            });
+        }
+
+        // Run test on page load
+        window.onload = testRegionDetection;
+    </script>
+</body>
+</html>

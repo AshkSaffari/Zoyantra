@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Refresh Authentication</title>
+</head>
+<body>
+    <h1>Authentication Refresh Tool</h1>
+    <button onclick="refreshAuth()">Refresh Authentication Token</button>
+    <button onclick="clearAuth()">Clear Authentication</button>
+    <div id="status"></div>
+
+    <script>
+        async function refreshAuth() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = 'Attempting to refresh token...';
+            
+            try {
+                // Get current credentials
+                const credentials = JSON.parse(localStorage.getItem('cewa_credentials') || '{}');
+                
+                if (!credentials.refreshToken) {
+                    statusDiv.innerHTML = 'No refresh token found. Please re-authenticate.';
+                    return;
+                }
+                
+                // Try to refresh the token
+                const response = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refreshToken: credentials.refreshToken
+                    })
+                });
+                
+                if (response.ok) {
+                    const newCredentials = await response.json();
+                    localStorage.setItem('cewa_credentials', JSON.stringify(newCredentials));
+                    statusDiv.innerHTML = '✅ Token refreshed successfully!';
+                } else {
+                    statusDiv.innerHTML = '❌ Token refresh failed. Please re-authenticate.';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '❌ Error: ' + error.message;
+            }
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('cewa_credentials');
+            localStorage.removeItem('zoyantra_credentials');
+            document.getElementById('status').innerHTML = '✅ Authentication cleared. Please refresh the page to re-authenticate.';
+        }
+    </script>
+</body>
+</html>

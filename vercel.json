@@ -1,0 +1,49 @@
+{
+  "version": 2,
+  "name": "zoyantra",
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1",
+      "headers": {
+        "cache-control": "s-maxage=31536000,immutable"
+      }
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/docusign/auth",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/auth/callback",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/(zoyantra-logo\\.svg|zoyantra-logo-small\\.svg|logo\\.svg|favicon\\.svg|glossy-hexagon-z-logo\\.svg|glossy-hexagon-z-logo-large\\.svg|asset-manifest\\.json|manifest\\.json|auth/callback\\.html|sharepoint-callback\\.html|test-uid-api\\.html|favicon\\.ico|robots\\.txt)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

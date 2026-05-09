@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Main App OAuth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #5a6fd8;
+        }
+        .iframe-container {
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            margin: 20px 0;
+            height: 600px;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Main App OAuth</h1>
+        <p>This page loads the main application and checks the OAuth functionality.</p>
+        
+        <div>
+            <button class="button" onclick="loadMainApp()">Load Main App</button>
+            <button class="button" onclick="checkOAuthButton()">Check OAuth Button</button>
+            <button class="button" onclick="testOAuthClick()">Test OAuth Click</button>
+            <button class="button" onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div id="log" class="log"></div>
+        
+        <div class="iframe-container">
+            <iframe id="mainApp" src="http://localhost:3000" width="100%" height="100%" style="border: none;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function loadMainApp() {
+            log('🔄 Loading main application...');
+            const iframe = document.getElementById('mainApp');
+            iframe.src = 'http://localhost:3000';
+            
+            iframe.onload = function() {
+                log('✅ Main app loaded successfully');
+                setTimeout(checkOAuthButton, 2000); // Wait 2 seconds for React to render
+            };
+            
+            iframe.onerror = function() {
+                log('❌ Error loading main app');
+            };
+        }
+
+        function checkOAuthButton() {
+            log('🔍 Checking for OAuth button...');
+            const iframe = document.getElementById('mainApp');
+            
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const oauthButton = iframeDoc.querySelector('a[href*="developer.api.autodesk.com"]');
+                
+                if (oauthButton) {
+                    const href = oauthButton.getAttribute('href');
+                    log(`✅ OAuth button found!`);
+                    log(`🔗 OAuth URL: ${href}`);
+                    
+                    // Check if the URL looks correct
+                    if (href.includes('client_id=ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo') && 
+                        href.includes('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback.html')) {
+                        log('✅ OAuth URL looks correct!');
+                    } else {
+                        log('⚠️ OAuth URL might have issues');
+                        log(`Expected client_id: ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo`);
+                        log(`Expected redirect_uri: http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback.html`);
+                    }
+                } else {
+                    log('❌ OAuth button not found');
+                    log('🔍 Looking for any links with "autodesk" in href...');
+                    const allLinks = iframeDoc.querySelectorAll('a[href*="autodesk"]');
+                    log(`Found ${allLinks.length} links with "autodesk" in href`);
+                    allLinks.forEach((link, index) => {
+                        log(`Link ${index + 1}: ${link.getAttribute('href')}`);
+                    });
+                    
+                    // Also check for any buttons or elements that might trigger OAuth
+                    const buttons = iframeDoc.querySelectorAll('button, a');
+                    log(`Found ${buttons.length} total buttons/links`);
+                    buttons.forEach((btn, index) => {
+                        const text = btn.textContent.trim();
+                        if (text.includes('Sign In') || text.includes('Autodesk') || text.includes('Login')) {
+                            log(`Button ${index + 1}: "${text}" - ${btn.tagName}`);
+                        }
+                    });
+                }
+            } catch (error) {
+                log(`❌ Error checking OAuth button: ${error.message}`);
+                log('This might be due to CORS restrictions. Try opening the main app directly.');
+            }
+        }
+
+        function testOAuthClick() {
+            log('🔄 Testing OAuth button click...');
+            const iframe = document.getElementById('mainApp');
+            
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const oauthButton = iframeDoc.querySelector('a[href*="developer.api.autodesk.com"]');
+                
+                if (oauthButton) {
+                    log('🔄 Clicking OAuth button...');
+                    oauthButton.click();
+                } else {
+                    log('❌ OAuth button not found to click');
+                }
+            } catch (error) {
+                log(`❌ Error clicking OAuth button: ${error.message}`);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // Auto-load main app on page load
+        window.onload = function() {
+            loadMainApp();
+        };
+    </script>
+</body>
+</html>

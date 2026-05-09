@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear ACC Authentication - Fix Folder Browser</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button { 
+            padding: 15px 30px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .clear-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        .clear-btn:hover {
+            background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+            transform: translateY(-2px);
+        }
+        .reload-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+        .reload-btn:hover {
+            background: linear-gradient(45deg, #44a08d, #4ecdc4);
+            transform: translateY(-2px);
+        }
+        .success { 
+            color: #2ecc71; 
+            background: rgba(46, 204, 113, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #2ecc71;
+        }
+        .error { 
+            color: #e74c3c; 
+            background: rgba(231, 76, 60, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e74c3c;
+        }
+        .info {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #3498db;
+            margin: 20px 0;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .steps {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .steps ol {
+            color: #ecf0f1;
+        }
+        .steps li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix ACC Folder Browser</h1>
+        
+        <div class="info">
+            <strong>Problem:</strong> Your Autodesk authentication tokens have expired, causing the folder browser to fail with 401 Unauthorized errors.
+        </div>
+
+        <div class="steps">
+            <h3>📋 Steps to Fix:</h3>
+            <ol>
+                <li><strong>Clear Authentication Data</strong> - Remove expired tokens from browser storage</li>
+                <li><strong>Reload Application</strong> - Restart the app to trigger fresh authentication</li>
+                <li><strong>Re-authenticate</strong> - Sign in again with your Autodesk account</li>
+                <li><strong>Test Folder Browser</strong> - Verify the folder browser works in all tabs</li>
+            </ol>
+        </div>
+
+        <div id="statusMessage" class="info">
+            Ready to fix the authentication issue. Click the button below to clear all stored authentication data.
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button id="clearButton" class="clear-btn">
+                🧹 Clear All Authentication Data
+            </button>
+            <button id="reloadButton" class="reload-btn">
+                🔄 Reload Application
+            </button>
+        </div>
+
+        <div class="info">
+            <strong>What this does:</strong><br>
+            • Clears localStorage and sessionStorage<br>
+            • Removes expired Autodesk tokens<br>
+            • Forces fresh authentication on reload<br>
+            • Fixes the 401 Unauthorized errors
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('clearButton').addEventListener('click', () => {
+            try {
+                // Clear all authentication data
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Also clear any cookies that might contain auth data
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                document.getElementById('statusMessage').innerHTML = `
+                    <div class="success">
+                        ✅ <strong>Authentication data cleared successfully!</strong><br>
+                        All expired tokens have been removed. Please reload the application to re-authenticate.
+                    </div>
+                `;
+                
+                console.log('✅ localStorage and sessionStorage cleared. Please reload the application.');
+            } catch (e) {
+                document.getElementById('statusMessage').innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error clearing storage:</strong> ${e.message}
+                    </div>
+                `;
+                console.error('Error clearing storage:', e);
+            }
+        });
+
+        document.getElementById('reloadButton').addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        // Auto-clear on page load for convenience
+        window.addEventListener('load', () => {
+            console.log('🔧 ACC Authentication Fix Tool loaded');
+            console.log('📋 Current localStorage keys:', Object.keys(localStorage));
+            console.log('📋 Current sessionStorage keys:', Object.keys(sessionStorage));
+        });
+    </script>
+</body>
+</html>

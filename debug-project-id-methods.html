@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project ID Methods Debugger</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .test-result { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Project ID Methods Debugger</h1>
+    <p>This debugger tests all possible project ID formats and methods for ACC API calls.</p>
+
+    <div class="debug-section">
+        <h3>📋 Test Configuration</h3>
+        <label>Project ID (with or without b. prefix):</label><br>
+        <input type="text" id="projectId" value="5fec8f39-7a15-48c4-973a-789cc5906a63" style="width: 400px; padding: 5px;"><br><br>
+        
+        <label>3-Legged Token:</label><br>
+        <textarea id="token" rows="3" style="width: 100%; padding: 5px;" placeholder="Paste your 3-legged token here"></textarea><br><br>
+        
+        <label>Test File URN:</label><br>
+        <input type="text" id="fileUrn" value="urn:adsk.wipprodanz:fs.file:vf.CjugQeu8QKujNVb-5g3xZA?version=5" style="width: 100%; padding: 5px;"><br><br>
+        
+        <label>Workflow ID:</label><br>
+        <input type="text" id="workflowId" value="31c07041-ad8d-48d9-b9f7-5ae0d4b34bbf" style="width: 400px; padding: 5px;"><br><br>
+        
+        <button onclick="runAllTests()">🚀 Run All Project ID Tests</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        function addResult(title, content, type = 'info') {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = `<h4>${title}</h4><pre>${content}</pre>`;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function getProjectIdVariations(originalId) {
+            const variations = {
+                'Original': originalId,
+                'With b. prefix': originalId.startsWith('b.') ? originalId : `b.${originalId}`,
+                'Without b. prefix': originalId.startsWith('b.') ? originalId.substring(2) : originalId,
+                'Base64 encoded': btoa(originalId),
+                'Base64 encoded (with b.)': btoa(originalId.startsWith('b.') ? originalId : `b.${originalId}`),
+                'URL encoded': encodeURIComponent(originalId),
+                'URL encoded (with b.)': encodeURIComponent(originalId.startsWith('b.') ? originalId : `b.${originalId}`)
+            };
+            return variations;
+        }
+        
+        async function testProjectIdMethod(methodName, projectId, token, fileUrn, workflowId) {
+            const results = [];
+            
+            // Test different project ID variations
+            const variations = getProjectIdVariations(projectId);
+            
+            for (const [variationName, testId] of Object.entries(variations)) {
+                try {
+                    console.log(`🧪 Testing ${methodName} with ${variationName}: ${testId}`);
+                    
+                    const payload = {
+                        name: `Test Review - ${new Date().toISOString()}`,
+                        fileVersions: [{ urn: fileUrn }],
+                        workflowId: workflowId
+                    };
+                    
+                    const response = await fetch(`/api/acc/reviews/${testId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    results.push({
+                        variation: variationName,
+                        projectId: testId,
+                        success: response.ok,
+                        status: response.status,
+                        response: data,
+                        error: response.ok ? null : (data.error || data.message || 'Unknown error')
+                    });
+                    
+                    console.log(`✅ ${methodName} - ${variationName}: ${response.ok ? 'SUCCESS' : 'FAILED'}`);
+                    
+                } catch (error) {
+                    results.push({
+                        variation: variationName,
+                        projectId: testId,
+                        success: false,
+                        status: 'ERROR',
+                        response: null,
+                        error: error.message
+                    });
+                    
+                    console.error(`❌ ${methodName} - ${variationName}: ${error.message}`);
+                }
+            }
+            
+            return results;
+        }
+        
+        async function testBackendProjectIdHandling(projectId, token, fileUrn, workflowId) {
+            const results = [];
+            
+            // Test what the backend does with different project ID formats
+            const variations = getProjectIdVariations(projectId);
+            
+            for (const [variationName, testId] of Object.entries(variations)) {
+                try {
+                    console.log(`🔧 Testing backend handling with ${variationName}: ${testId}`);
+                    
+                    const payload = {
+                        name: `Backend Test - ${new Date().toISOString()}`,
+                        fileVersions: [{ urn: fileUrn }],
+                        workflowId: workflowId
+                    };
+                    
+                    // Test what the backend logs show
+                    const response = await fetch(`/api/acc/reviews/${testId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    results.push({
+                        variation: variationName,
+                        projectId: testId,
+                        success: response.ok,
+                        status: response.status,
+                        response: data,
+                        backendHandling: `Backend received: ${testId}, Cleaned: ${testId.startsWith('b.') ? testId.substring(2) : testId}`
+                    });
+                    
+                } catch (error) {
+                    results.push({
+                        variation: variationName,
+                        projectId: testId,
+                        success: false,
+                        status: 'ERROR',
+                        response: null,
+                        error: error.message
+                    });
+                }
+            }
+            
+            return results;
+        }
+        
+        async function testAccServiceProjectIdHandling(projectId, token, fileUrn, workflowId) {
+            const results = [];
+            
+            // Test what AccService does with different project ID formats
+            const variations = getProjectIdVariations(projectId);
+            
+            for (const [variationName, testId] of Object.entries(variations)) {
+                try {
+                    console.log(`🔧 Testing AccService handling with ${variationName}: ${testId}`);
+                    
+                    const payload = {
+                        name: `AccService Test - ${new Date().toISOString()}`,
+                        fileVersions: [{ urn: fileUrn }],
+                        workflowId: workflowId
+                    };
+                    
+                    // Simulate AccService.createReview logic
+                    const cleanProjectId = testId.startsWith('b.') ? testId.substring(2) : testId;
+                    const url = `/api/acc/reviews/${cleanProjectId}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    results.push({
+                        variation: variationName,
+                        originalId: testId,
+                        cleanedId: cleanProjectId,
+                        url: url,
+                        success: response.ok,
+                        status: response.status,
+                        response: data
+                    });
+                    
+                } catch (error) {
+                    results.push({
+                        variation: variationName,
+                        originalId: testId,
+                        cleanedId: testId.startsWith('b.') ? testId.substring(2) : testId,
+                        url: `/api/acc/reviews/${testId.startsWith('b.') ? testId.substring(2) : testId}`,
+                        success: false,
+                        status: 'ERROR',
+                        response: null,
+                        error: error.message
+                    });
+                }
+            }
+            
+            return results;
+        }
+        
+        async function runAllTests() {
+            const projectId = document.getElementById('projectId').value;
+            const token = document.getElementById('token').value;
+            const fileUrn = document.getElementById('fileUrn').value;
+            const workflowId = document.getElementById('workflowId').value;
+            
+            if (!projectId || !token || !fileUrn || !workflowId) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            clearResults();
+            addResult('🚀 Starting Project ID Debug Tests', `Testing with:\nProject ID: ${projectId}\nToken: ${token.substring(0, 50)}...\nFile URN: ${fileUrn}\nWorkflow ID: ${workflowId}`);
+            
+            // Test 1: Direct API calls with different project ID formats
+            addResult('📋 Test 1: Direct API Calls', 'Testing different project ID formats directly...');
+            const directResults = await testProjectIdMethod('Direct API', projectId, token, fileUrn, workflowId);
+            
+            let directSuccess = directResults.find(r => r.success);
+            if (directSuccess) {
+                addResult('✅ Direct API Success', `Working format: ${directSuccess.variation}\nProject ID: ${directSuccess.projectId}\nStatus: ${directSuccess.status}`, 'success');
+            } else {
+                addResult('❌ Direct API Failed', 'No direct API calls succeeded', 'error');
+            }
+            
+            // Test 2: Backend project ID handling
+            addResult('🔧 Test 2: Backend Project ID Handling', 'Testing how backend processes different project ID formats...');
+            const backendResults = await testBackendProjectIdHandling(projectId, token, fileUrn, workflowId);
+            
+            let backendSuccess = backendResults.find(r => r.success);
+            if (backendSuccess) {
+                addResult('✅ Backend Success', `Working format: ${backendSuccess.variation}\nBackend handling: ${backendSuccess.backendHandling}\nStatus: ${backendSuccess.status}`, 'success');
+            } else {
+                addResult('❌ Backend Failed', 'No backend calls succeeded', 'error');
+            }
+            
+            // Test 3: AccService project ID handling
+            addResult('🔧 Test 3: AccService Project ID Handling', 'Testing how AccService processes different project ID formats...');
+            const accServiceResults = await testAccServiceProjectIdHandling(projectId, token, fileUrn, workflowId);
+            
+            let accServiceSuccess = accServiceResults.find(r => r.success);
+            if (accServiceSuccess) {
+                addResult('✅ AccService Success', `Working format: ${accServiceSuccess.variation}\nOriginal ID: ${accServiceSuccess.originalId}\nCleaned ID: ${accServiceSuccess.cleanedId}\nURL: ${accServiceSuccess.url}\nStatus: ${accServiceSuccess.status}`, 'success');
+            } else {
+                addResult('❌ AccService Failed', 'No AccService calls succeeded', 'error');
+            }
+            
+            // Summary
+            const allResults = [...directResults, ...backendResults, ...accServiceResults];
+            const successfulResults = allResults.filter(r => r.success);
+            
+            if (successfulResults.length > 0) {
+                addResult('🎯 Summary: Working Methods Found', 
+                    `Found ${successfulResults.length} working method(s):\n\n` +
+                    successfulResults.map(r => 
+                        `✅ ${r.variation || 'Unknown'}: ${r.projectId || r.originalId} → ${r.cleanedId || r.projectId} (Status: ${r.status})`
+                    ).join('\n'), 'success');
+            } else {
+                addResult('❌ Summary: No Working Methods', 
+                    'No project ID format worked. Check:\n1. Token is valid\n2. Server is running\n3. Project ID exists\n4. File URN is correct', 'error');
+            }
+            
+            // Detailed results
+            addResult('📊 Detailed Results', 
+                `All test results:\n\n` +
+                allResults.map(r => 
+                    `${r.success ? '✅' : '❌'} ${r.variation || 'Unknown'}: ${r.projectId || r.originalId} → ${r.cleanedId || r.projectId} (${r.status}) ${r.error ? `- ${r.error}` : ''}`
+                ).join('\n'), 'info');
+        }
+    </script>
+</body>
+</html>

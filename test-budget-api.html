@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget API Test</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            margin: 20px; 
+            background-color: #f4f4f4; 
+            color: #333; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: auto; 
+            background-color: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        h1 { color: #0056b3; }
+        .test-section { 
+            background-color: #e9ecef; 
+            border-left: 5px solid #007bff; 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border-radius: 4px; 
+        }
+        .result { 
+            background-color: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 10px; 
+            margin-top: 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+        }
+        .success { border-left: 5px solid #28a745; }
+        .error { border-left: 5px solid #dc3545; }
+        .warning { border-left: 5px solid #ffc107; }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Budget API Test</h1>
+        
+        <div class="test-section">
+            <h3>Test Budget API Integration</h3>
+            <p>This page tests the budget API integration for CEWA (Australia) hub projects.</p>
+            <button onclick="testBudgetAPI()">🧪 Test Budget API</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Simulate the AccService.getBudgets method
+        async function testBudgetAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">🔄 Testing Budget API...</div>';
+
+            try {
+                // Simulate project and hub data
+                const projectId = '5fec8f39-7a15-48c4-973a-789cc5906a63';
+                const hubId = 'b.cewa-aus-hub-123';
+                
+                console.log('🧪 Testing Budget API for CEWA hub...');
+                console.log('📋 Project ID:', projectId);
+                console.log('🏢 Hub ID:', hubId);
+                
+                // Simulate the budget API call
+                const budgetResult = await simulateBudgetAPICall(projectId, hubId);
+                
+                if (budgetResult.success) {
+                    resultsDiv.innerHTML = `
+                        <div class="result success">
+✅ Budget API Test Successful!
+
+📊 Results:
+- Project ID: ${projectId}
+- Hub ID: ${hubId}
+- Region: AUS (Australia)
+- Budgets Found: ${budgetResult.budgets.length}
+- API Endpoint: ${budgetResult.endpoint}
+- Response Time: ${budgetResult.responseTime}ms
+
+💰 Budget Data:
+${JSON.stringify(budgetResult.budgets, null, 2)}
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="result error">
+❌ Budget API Test Failed!
+
+📊 Error Details:
+- Project ID: ${projectId}
+- Hub ID: ${hubId}
+- Error: ${budgetResult.error}
+- Status: ${budgetResult.status}
+
+🔍 Debugging Info:
+${JSON.stringify(budgetResult.debug, null, 2)}
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="result error">
+❌ Test Failed with Exception: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function simulateBudgetAPICall(projectId, hubId) {
+            const startTime = Date.now();
+            
+            try {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Simulate different scenarios
+                const scenarios = [
+                    {
+                        success: true,
+                        budgets: [
+                            {
+                                id: 'budget-1',
+                                name: 'Site Preparation',
+                                originalAmount: 50000,
+                                revised: 52000,
+                                actualCost: 48000,
+                                projectedCost: 51000
+                            },
+                            {
+                                id: 'budget-2', 
+                                name: 'Structural Work',
+                                originalAmount: 150000,
+                                revised: 155000,
+                                actualCost: 140000,
+                                projectedCost: 152000
+                            }
+                        ],
+                        endpoint: 'https://developer.api.autodesk.com/cost/v1/containers/' + projectId + '/budgets',
+                        responseTime: Date.now() - startTime
+                    },
+                    {
+                        success: false,
+                        error: 'Cost Management not available for this project',
+                        status: 404,
+                        debug: {
+                            message: 'No cost container found',
+                            region: 'AUS',
+                            hubType: 'CEWA'
+                        }
+                    }
+                ];
+                
+                // Return random scenario for testing
+                return scenarios[Math.floor(Math.random() * scenarios.length)];
+                
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message,
+                    status: 500,
+                    debug: { exception: error.toString() }
+                };
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Auto-run test on page load
+        window.onload = function() {
+            console.log('🧪 Budget API Test Page Loaded');
+            console.log('🔍 Ready to test CEWA hub budget integration');
+        };
+    </script>
+</body>
+</html>

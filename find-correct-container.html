@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Correct Container ID</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .debug-section {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: 1 / -1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Find Correct Container ID</h1>
+            <p>Debug "Project not found" Error - Find Valid Container IDs</p>
+        </div>
+        
+        <div class="content">
+            <div class="debug-section">
+                <h3>🎯 The Problem</h3>
+                <p><strong>Error 40004: "Project not found"</strong> means the container ID doesn't exist in your account.</p>
+                
+                <h4>What we need to do:</h4>
+                <ul>
+                    <li>✅ <strong>Find your actual projects</strong> in ACC</li>
+                    <li>✅ <strong>Get the correct container IDs</strong> from project relationships</li>
+                    <li>✅ <strong>Test the correct container IDs</strong> with the budget API</li>
+                </ul>
+            </div>
+
+            <div class="debug-section">
+                <h3>🔧 Debug Tools</h3>
+                <div class="grid">
+                <button onclick="findAllProjects()">🔍 Find All Projects</button>
+                <button onclick="findContainerIds()">🎯 Find Container IDs</button>
+                <button onclick="testAllContainers()">🧪 Test All Containers</button>
+                <button onclick="refreshToken()">🔄 Refresh Token</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <h3>📋 Manual Test</h3>
+                <p>If you know a project ID, test it directly:</p>
+                <input type="text" id="manualProjectId" placeholder="Enter project ID to test..." />
+                <button onclick="testManualProject()">🧪 Test This Project</button>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load current token from localStorage
+        function getCurrentToken() {
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                if (credentials.threeLegToken) {
+                    console.log('✅ Using current token from localStorage');
+                    console.log('🔑 Token snippet:', credentials.threeLegToken.substring(0, 20) + '...');
+                    return credentials.threeLegToken;
+                } else {
+                    console.log('⚠️ No token found in localStorage');
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ Error loading token from localStorage:', error);
+                return null;
+            }
+        }
+
+        // Check if token is expired and refresh if needed
+        async function ensureValidToken() {
+            const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+            const now = new Date().getTime();
+            const tokenExpiry = credentials.tokenExpiryTime ? new Date(credentials.tokenExpiryTime).getTime() : 0;
+            
+            // If token expires in less than 5 minutes, try to refresh
+            if (tokenExpiry - now < 5 * 60 * 1000) {
+                console.log('🔄 Token expires soon, attempting refresh...');
+                try {
+                    const refreshResponse = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams({
+                            grant_type: 'refresh_token',
+                            client_id: credentials.clientId || 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                            client_secret: credentials.clientSecret || 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                            refresh_token: credentials.refreshToken
+                        })
+                    });
+                    
+                    if (refreshResponse.ok) {
+                        const newTokenData = await refreshResponse.json();
+                        const newCredentials = {
+                            ...credentials,
+                            threeLegToken: newTokenData.access_token,
+                            refreshToken: newTokenData.refresh_token,
+                            tokenExpiryTime: new Date(Date.now() + (newTokenData.expires_in * 1000)).toISOString()
+                        };
+                        localStorage.setItem('credentials', JSON.stringify(newCredentials));
+                        console.log('✅ Token refreshed successfully');
+                        return newCredentials.threeLegToken;
+                    } else {
+                        console.log('⚠️ Token refresh failed, using existing token');
+                        return credentials.threeLegToken;
+                    }
+                } catch (error) {
+                    console.log('⚠️ Token refresh error:', error.message);
+                    return credentials.threeLegToken;
+                }
+            }
+            
+            return credentials.threeLegToken;
+        }
+
+        async function findAllProjects() {
+            addResult('info', '🔍 Finding All Projects', 'Searching through all hubs for projects...');
+            
+            const accessToken = await ensureValidToken();
+            if (!accessToken) {
+                addResult('error', 'No Access Token', 'Please authenticate in the main app first');
+                return;
+            }
+            
+            try {
+                // Step 1: Get all hubs
+                const hubsUrl = 'https://developer.api.autodesk.com/project/v1/hubs';
+                const hubsResponse = await fetch(hubsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!hubsResponse.ok) {
+                    addResult('error', 'Hubs API Failed', `Status: ${hubsResponse.status}`);
+                    return;
+                }
+                
+                const hubsData = await hubsResponse.json();
+                addResult('info', 'Available Hubs', `Found ${hubsData.data?.length || 0} hubs`);
+                
+                // Step 2: Get projects from each hub
+                for (const hub of hubsData.data || []) {
+                    addResult('info', `Hub: ${hub.attributes?.name}`, `ID: ${hub.id}, Region: ${hub.attributes?.region}`);
+                    
+                    try {
+                        const projectsUrl = `https://developer.api.autodesk.com/project/v1/hubs/${hub.id}/projects`;
+                        const projectsResponse = await fetch(projectsUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (projectsResponse.ok) {
+                            const projectsData = await projectsResponse.json();
+                            addResult('info', `Projects in ${hub.attributes?.name}`, `Found ${projectsData.data?.length || 0} projects`);
+                            
+                            for (const project of projectsData.data || []) {
+                                addResult('info', `Project: ${project.attributes?.name}`, 
+                                    `ID: ${project.id}\nStatus: ${project.attributes?.status}\nType: ${project.attributes?.projectType}`);
+                            }
+                        } else {
+                            addResult('error', `Hub ${hub.attributes?.name} Projects Failed`, `Status: ${projectsResponse.status}`);
+                        }
+                    } catch (error) {
+                        addResult('error', `Hub ${hub.id} Error`, error.message);
+                    }
+                }
+            } catch (error) {
+                addResult('error', 'Search Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function findContainerIds() {
+            addResult('info', '🎯 Finding Container IDs', 'Looking for cost container relationships...');
+            
+            const accessToken = await ensureValidToken();
+            if (!accessToken) {
+                addResult('error', 'No Access Token', 'Please authenticate in the main app first');
+                return;
+            }
+            
+            try {
+                // Get all hubs
+                const hubsUrl = 'https://developer.api.autodesk.com/project/v1/hubs';
+                const hubsResponse = await fetch(hubsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!hubsResponse.ok) {
+                    addResult('error', 'Hubs API Failed', `Status: ${hubsResponse.status}`);
+                    return;
+                }
+                
+                const hubsData = await hubsResponse.json();
+                const validContainers = [];
+                
+                // Check each hub for projects with cost containers
+                for (const hub of hubsData.data || []) {
+                    try {
+                        const projectsUrl = `https://developer.api.autodesk.com/project/v1/hubs/${hub.id}/projects`;
+                        const projectsResponse = await fetch(projectsUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (projectsResponse.ok) {
+                            const projectsData = await projectsResponse.json();
+                            
+                            for (const project of projectsData.data || []) {
+                                // Check if project has cost container
+                                if (project.relationships?.cost?.data?.id) {
+                                    const containerInfo = {
+                                        hubName: hub.attributes?.name,
+                                        hubRegion: hub.attributes?.region,
+                                        projectName: project.attributes?.name,
+                                        projectId: project.id,
+                                        containerId: project.relationships.cost.data.id
+                                    };
+                                    
+                                    validContainers.push(containerInfo);
+                                    
+                                    addResult('success', '✅ FOUND CONTAINER!', 
+                                        `Hub: ${containerInfo.hubName}\nProject: ${containerInfo.projectName}\nContainer ID: ${containerInfo.containerId}\nRegion: ${containerInfo.hubRegion}`);
+                                } else {
+                                    addResult('warning', '⚠️ No Cost Container', 
+                                        `Project: ${project.attributes?.name} (${project.id}) - No cost relationship found`);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        addResult('error', `Hub ${hub.id} Error`, error.message);
+                    }
+                }
+                
+                if (validContainers.length === 0) {
+                    addResult('error', '❌ No Containers Found', 'No projects with cost containers found in any hub');
+                } else {
+                    addResult('success', '🎉 Summary', `Found ${validContainers.length} valid container(s)`);
+                    
+                    // Store for testing
+                    window.validContainers = validContainers;
+                }
+            } catch (error) {
+                addResult('error', 'Container Search Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function testAllContainers() {
+            if (!window.validContainers || window.validContainers.length === 0) {
+                addResult('error', 'No Containers to Test', 'Run "Find Container IDs" first');
+                return;
+            }
+            
+            const accessToken = await ensureValidToken();
+            if (!accessToken) {
+                addResult('error', 'No Access Token', 'Please authenticate in the main app first');
+                return;
+            }
+            
+            addResult('info', '🧪 Testing All Containers', `Testing ${window.validContainers.length} containers...`);
+            
+            for (const container of window.validContainers) {
+                addResult('info', `Testing Container: ${container.containerId}`, 
+                    `Project: ${container.projectName}\nHub: ${container.hubName}\nRegion: ${container.hubRegion}`);
+                
+                try {
+                    const url = `https://developer.api.autodesk.com/cost/v1/containers/${container.containerId}/budgets`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                            'region': container.hubRegion || 'US'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const budgetCount = (data.results || data.data || []).length;
+                        addResult('success', '🎉 CONTAINER WORKS!', 
+                            `Container: ${container.containerId}\nProject: ${container.projectName}\nFound ${budgetCount} budgets`);
+                        addResult('info', 'Budget Data', JSON.stringify(data, null, 2));
+                    } else {
+                        const errorText = await response.text();
+                        addResult('error', '❌ Container Failed', 
+                            `Container: ${container.containerId}\nStatus: ${response.status}\nError: ${errorText}`);
+                    }
+                } catch (error) {
+                    addResult('error', '❌ Container Test Error', 
+                        `Container: ${container.containerId}\nError: ${error.message}`);
+                }
+            }
+            
+            displayResults();
+        }
+
+        async function testManualProject() {
+            const projectId = document.getElementById('manualProjectId').value;
+            if (!projectId) {
+                addResult('error', 'No Project ID', 'Please enter a project ID to test');
+                return;
+            }
+            
+            const accessToken = await ensureValidToken();
+            if (!accessToken) {
+                addResult('error', 'No Access Token', 'Please authenticate in the main app first');
+                return;
+            }
+            
+            addResult('info', '🧪 Testing Manual Project', `Project ID: ${projectId}`);
+            
+            // Test the project ID directly as container ID
+            try {
+                const url = `https://developer.api.autodesk.com/cost/v1/containers/${projectId}/budgets`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'region': 'AUS'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const budgetCount = (data.results || data.data || []).length;
+                    addResult('success', '🎉 PROJECT WORKS AS CONTAINER!', 
+                        `Project ID: ${projectId}\nFound ${budgetCount} budgets`);
+                    addResult('info', 'Budget Data', JSON.stringify(data, null, 2));
+                } else {
+                    const errorText = await response.text();
+                    addResult('error', '❌ Project Failed', 
+                        `Project ID: ${projectId}\nStatus: ${response.status}\nError: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('error', '❌ Project Test Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function refreshToken() {
+            addResult('info', '🔄 Refreshing Token', 'Attempting to refresh access token...');
+            
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                
+                if (!credentials.refreshToken) {
+                    addResult('error', 'No Refresh Token', 'No refresh token available. Please re-authenticate in the main app.');
+                    return;
+                }
+                
+                const refreshResponse = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'refresh_token',
+                        client_id: credentials.clientId || 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                        client_secret: credentials.clientSecret || 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                        refresh_token: credentials.refreshToken
+                    })
+                });
+                
+                if (refreshResponse.ok) {
+                    const newTokenData = await refreshResponse.json();
+                    const newCredentials = {
+                        ...credentials,
+                        threeLegToken: newTokenData.access_token,
+                        refreshToken: newTokenData.refresh_token,
+                        tokenExpiryTime: new Date(Date.now() + (newTokenData.expires_in * 1000)).toISOString()
+                    };
+                    localStorage.setItem('credentials', JSON.stringify(newCredentials));
+                    addResult('success', '✅ Token Refreshed', `New token expires at: ${newCredentials.tokenExpiryTime}`);
+                } else {
+                    const errorText = await refreshResponse.text();
+                    addResult('error', '❌ Token Refresh Failed', `Status: ${refreshResponse.status}\nError: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('error', '❌ Token Refresh Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function displayResults() {
+            // Results are displayed as they're added
+        }
+    </script>
+</body>
+</html>

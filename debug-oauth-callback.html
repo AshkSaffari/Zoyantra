@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Callback Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 OAuth Callback Debug</h1>
+    
+    <div class="debug-section">
+        <h3>Current URL Information</h3>
+        <p><strong>Full URL:</strong> <span id="fullUrl"></span></p>
+        <p><strong>Search Params:</strong> <span id="searchParams"></span></p>
+        <p><strong>Hash:</strong> <span id="hash"></span></p>
+    </div>
+
+    <div class="debug-section">
+        <h3>OAuth Parameters</h3>
+        <p><strong>Code:</strong> <span id="code"></span></p>
+        <p><strong>Error:</strong> <span id="error"></span></p>
+        <p><strong>Error Description:</strong> <span id="errorDescription"></span></p>
+        <p><strong>State:</strong> <span id="state"></span></p>
+    </div>
+
+    <div class="debug-section">
+        <h3>Session Storage</h3>
+        <p><strong>Code Verifier:</strong> <span id="codeVerifier"></span></p>
+        <p><strong>OAuth Callback Processed:</strong> <span id="callbackProcessed"></span></p>
+    </div>
+
+    <div class="debug-section">
+        <h3>Actions</h3>
+        <button onclick="testTokenExchange()">Test Token Exchange</button>
+        <button onclick="clearSessionStorage()">Clear Session Storage</button>
+        <button onclick="redirectToMain()">Redirect to Main App</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Display current URL information
+        document.getElementById('fullUrl').textContent = window.location.href;
+        document.getElementById('searchParams').textContent = window.location.search;
+        document.getElementById('hash').textContent = window.location.hash;
+
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        const state = urlParams.get('state');
+
+        document.getElementById('code').textContent = code ? `Present (${code.length} chars)` : 'Missing';
+        document.getElementById('error').textContent = error || 'None';
+        document.getElementById('errorDescription').textContent = errorDescription || 'None';
+        document.getElementById('state').textContent = state || 'None';
+
+        // Check session storage
+        const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
+        const callbackProcessed = sessionStorage.getItem('oauth_callback_processed');
+
+        document.getElementById('codeVerifier').textContent = codeVerifier ? `Present (${codeVerifier.length} chars)` : 'Missing';
+        document.getElementById('callbackProcessed').textContent = callbackProcessed || 'Not set';
+
+        async function testTokenExchange() {
+            if (!code) {
+                document.getElementById('results').innerHTML = '<div class="debug-section error">No authorization code found</div>';
+                return;
+            }
+
+            if (!codeVerifier) {
+                document.getElementById('results').innerHTML = '<div class="debug-section error">No code verifier found in session storage</div>';
+                return;
+            }
+
+            document.getElementById('results').innerHTML = '<div class="debug-section warning">Testing token exchange...</div>';
+
+            try {
+                const response = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        client_id: 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                        client_secret: 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                        code: code,
+                        redirect_uri: 'http://localhost:3000/auth/callback',
+                        code_verifier: codeVerifier
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('results').innerHTML = `
+                        <div class="debug-section success">
+                            <h4>Token Exchange Successful!</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <div class="debug-section error">
+                            <h4>Token Exchange Failed</h4>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="debug-section error">
+                        <h4>Token Exchange Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function clearSessionStorage() {
+            sessionStorage.clear();
+            location.reload();
+        }
+
+        function redirectToMain() {
+            if (code) {
+                window.location.href = `/?code=${code}`;
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        // Auto-test if we have a code
+        if (code) {
+            setTimeout(() => {
+                document.getElementById('results').innerHTML = '<div class="debug-section warning">Auto-testing token exchange...</div>';
+                testTokenExchange();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

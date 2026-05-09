@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Management NaN Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .container { max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Cost Management NaN Fix Test</h1>
+        <p>This test verifies that the "Total Original" value displays correctly instead of "$NaN".</p>
+        
+        <div>
+            <button onclick="testFormatCurrency()">🧪 Test formatCurrency Function</button>
+            <button onclick="testBudgetProcessing()">📊 Test Budget Processing</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `
+                <strong>${title}</strong><br>
+                ${content}<br>
+                <small>${new Date().toLocaleTimeString()}</small>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Test the fixed formatCurrency function
+        function testFormatCurrency() {
+            addResult('info', '🧪 Testing formatCurrency Function', 'Testing various input values...');
+            
+            // Fixed formatCurrency function (same as in CostManagementTab.js)
+            const formatCurrency = (amount, currency = 'USD') => {
+                // Handle NaN, null, undefined, and non-numeric values
+                const numericAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: currency
+                }).format(numericAmount);
+            };
+
+            // Test cases
+            const testCases = [
+                { input: NaN, expected: '$0.00', description: 'NaN input' },
+                { input: null, expected: '$0.00', description: 'null input' },
+                { input: undefined, expected: '$0.00', description: 'undefined input' },
+                { input: '', expected: '$0.00', description: 'empty string' },
+                { input: 'invalid', expected: '$0.00', description: 'invalid string' },
+                { input: 1000, expected: '$1,000.00', description: 'valid number' },
+                { input: 0, expected: '$0.00', description: 'zero' },
+                { input: -500, expected: '-$500.00', description: 'negative number' }
+            ];
+
+            let allPassed = true;
+            testCases.forEach(testCase => {
+                const result = formatCurrency(testCase.input);
+                const passed = result === testCase.expected;
+                if (!passed) allPassed = false;
+                
+                addResult(passed ? 'success' : 'error', 
+                    `${passed ? '✅' : '❌'} ${testCase.description}`, 
+                    `Input: ${testCase.input} → Output: ${result} (Expected: ${testCase.expected})`
+                );
+            });
+
+            if (allPassed) {
+                addResult('success', '🎉 All formatCurrency Tests Passed', 'The formatCurrency function now handles all edge cases correctly!');
+            } else {
+                addResult('error', '❌ Some Tests Failed', 'The formatCurrency function needs more fixes.');
+            }
+        }
+
+        // Test budget processing with safe numeric conversion
+        function testBudgetProcessing() {
+            addResult('info', '📊 Testing Budget Processing', 'Testing budget data processing with various data types...');
+            
+            // Mock budget data with problematic values (like real API responses)
+            const mockBudgetData = [
+                {
+                    id: '1',
+                    name: 'Budget 1',
+                    originalAmount: '1000.00', // String number
+                    revised: null, // null value
+                    projectedCost: undefined, // undefined
+                    actualCost: NaN, // NaN value
+                    variance: 'invalid' // invalid string
+                },
+                {
+                    id: '2',
+                    name: 'Budget 2',
+                    originalAmount: 2000, // Valid number
+                    revised: '1500.50', // String number
+                    projectedCost: 1800, // Valid number
+                    actualCost: 0, // Zero
+                    variance: -200 // Valid number
+                },
+                {
+                    id: '3',
+                    name: 'Budget 3',
+                    originalAmount: '', // Empty string
+                    revised: null, // null
+                    projectedCost: 'not-a-number', // Invalid string
+                    actualCost: null, // null
+                    variance: undefined // undefined
+                }
+            ];
+
+            // Safe number conversion function (same as in CostManagementTab.js)
+            const safeNumber = (value, defaultValue = 0) => {
+                if (value === null || value === undefined || value === '') return defaultValue;
+                const num = parseFloat(value);
+                return isNaN(num) ? defaultValue : num;
+            };
+
+            // Process budgets
+            const processedBudgets = mockBudgetData.map(budget => ({
+                id: budget.id,
+                name: budget.name,
+                originalAmount: safeNumber(budget.originalAmount),
+                revised: safeNumber(budget.revised),
+                projectedCost: safeNumber(budget.projectedCost),
+                actualCost: safeNumber(budget.actualCost),
+                variance: safeNumber(budget.variance)
+            }));
+
+            // Calculate summary
+            const summary = {
+                totalOriginalAmount: processedBudgets.reduce((sum, b) => {
+                    const amount = typeof b.originalAmount === 'number' && !isNaN(b.originalAmount) ? b.originalAmount : 0;
+                    return sum + amount;
+                }, 0),
+                totalRevised: processedBudgets.reduce((sum, b) => {
+                    const amount = typeof b.revised === 'number' && !isNaN(b.revised) ? b.revised : 0;
+                    return sum + amount;
+                }, 0),
+                totalProjectedCost: processedBudgets.reduce((sum, b) => {
+                    const amount = typeof b.projectedCost === 'number' && !isNaN(b.projectedCost) ? b.projectedCost : 0;
+                    return sum + amount;
+                }, 0),
+                totalActualCost: processedBudgets.reduce((sum, b) => {
+                    const amount = typeof b.actualCost === 'number' && !isNaN(b.actualCost) ? b.actualCost : 0;
+                    return sum + amount;
+                }, 0),
+                totalVariance: processedBudgets.reduce((sum, b) => {
+                    const amount = typeof b.variance === 'number' && !isNaN(b.variance) ? b.variance : 0;
+                    return sum + amount;
+                }, 0)
+            };
+
+            addResult('info', '📊 Processed Budgets', `
+                Budget 1: Original=${processedBudgets[0].originalAmount}, Revised=${processedBudgets[0].revised}<br>
+                Budget 2: Original=${processedBudgets[1].originalAmount}, Revised=${processedBudgets[1].revised}<br>
+                Budget 3: Original=${processedBudgets[2].originalAmount}, Revised=${processedBudgets[2].revised}
+            `);
+
+            addResult('info', '💰 Summary Calculations', `
+                Total Original: $${summary.totalOriginalAmount.toFixed(2)}<br>
+                Total Revised: $${summary.totalRevised.toFixed(2)}<br>
+                Total Projected: $${summary.totalProjectedCost.toFixed(2)}<br>
+                Total Actual: $${summary.totalActualCost.toFixed(2)}<br>
+                Total Variance: $${summary.totalVariance.toFixed(2)}
+            `);
+
+            // Test formatCurrency with summary values
+            const formatCurrency = (amount, currency = 'USD') => {
+                const numericAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: currency
+                }).format(numericAmount);
+            };
+
+            addResult('success', '🎉 Budget Processing Test Complete', `
+                <strong>Formatted Values:</strong><br>
+                Total Original: ${formatCurrency(summary.totalOriginalAmount)}<br>
+                Total Revised: ${formatCurrency(summary.totalRevised)}<br>
+                Total Projected: ${formatCurrency(summary.totalProjectedCost)}<br>
+                Total Actual: ${formatCurrency(summary.totalActualCost)}<br>
+                Total Variance: ${formatCurrency(summary.totalVariance)}
+            `);
+        }
+
+        // Auto-load on page load
+        window.onload = function() {
+            addResult('info', '🚀 Cost Management NaN Fix Test Ready', 'Click the test buttons to verify the fixes');
+        };
+    </script>
+</body>
+</html>

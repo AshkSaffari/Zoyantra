@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AU Budget API Deep Dive Debug</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .content {
+            padding: 30px;
+        }
+        .debug-section {
+            background: #f8f9fa;
+            border-left: 5px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .debug-section h3 {
+            margin-top: 0;
+            color: #007bff;
+            font-size: 1.3em;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+        .status-info { background: #17a2b8; }
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .step-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .step-content {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 AU Budget API Deep Dive</h1>
+            <p>Comprehensive debugging for ACC Cost Management API in Australian hubs</p>
+        </div>
+        
+        <div class="content">
+            <div class="debug-section">
+                <h3>🎯 Debug Controls</h3>
+                <button onclick="runDeepDive()" id="debugBtn">🚀 Run Deep Dive Analysis</button>
+                <button onclick="clearResults()" id="clearBtn">🗑️ Clear Results</button>
+                <button onclick="testSpecificEndpoint()" id="testBtn">🧪 Test Specific Endpoint</button>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        let debugResults = [];
+
+        async function runDeepDive() {
+            const debugBtn = document.getElementById('debugBtn');
+            const resultsDiv = document.getElementById('results');
+            
+            debugBtn.disabled = true;
+            debugBtn.textContent = '🔄 Running Analysis...';
+            debugResults = [];
+            
+            resultsDiv.innerHTML = '<div class="result info">🔄 Starting deep dive analysis...</div>';
+
+            try {
+                await performDeepDive();
+                displayResults();
+            } catch (error) {
+                addResult('error', 'Deep dive failed', error.message);
+                displayResults();
+            } finally {
+                debugBtn.disabled = false;
+                debugBtn.textContent = '🚀 Run Deep Dive Analysis';
+            }
+        }
+
+        async function performDeepDive() {
+            addResult('info', '🔍 DEEP DIVE: Budget API Debugging for AU Hub', 'Starting comprehensive analysis...');
+
+            // Step 1: Authentication Check
+            addResult('info', '🔐 STEP 1: Authentication Check', 'Checking authentication status...');
+            const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+            const hasToken = !!credentials.threeLegToken;
+            addResult(hasToken ? 'success' : 'error', 'Authentication Status', 
+                hasToken ? `✅ Token available (${credentials.threeLegToken?.length} chars)` : '❌ No access token found!');
+
+            if (!hasToken) {
+                addResult('error', 'Authentication Required', 'Please authenticate with ACC first');
+                return;
+            }
+
+            // Step 2: Hub Information
+            addResult('info', '🏢 STEP 2: Hub Information', 'Analyzing selected hub...');
+            const selectedHub = JSON.parse(localStorage.getItem('selectedHub') || '{}');
+            const hubInfo = {
+                id: selectedHub.id,
+                name: selectedHub.attributes?.name || selectedHub.name,
+                region: selectedHub.attributes?.region,
+                type: selectedHub.attributes?.extension?.type
+            };
+            addResult('info', 'Hub Details', JSON.stringify(hubInfo, null, 2));
+
+            if (!selectedHub.id) {
+                addResult('error', 'No Hub Selected', 'Please select a hub first');
+                return;
+            }
+
+            // Step 3: Project Information
+            addResult('info', '📋 STEP 3: Project Information', 'Analyzing selected project...');
+            const selectedProject = JSON.parse(localStorage.getItem('selectedProject') || '{}');
+            const projectInfo = {
+                id: selectedProject.id,
+                name: selectedProject.attributes?.name || selectedProject.name,
+                type: selectedProject.attributes?.extension?.type
+            };
+            addResult('info', 'Project Details', JSON.stringify(projectInfo, null, 2));
+
+            if (!selectedProject.id) {
+                addResult('error', 'No Project Selected', 'Please select a project first');
+                return;
+            }
+
+            // Step 4: Project Details API Test
+            addResult('info', '🔍 STEP 4: Project Details API Test', 'Testing project details retrieval...');
+            await testProjectDetailsAPI(selectedHub.id, selectedProject.id, credentials.threeLegToken);
+
+            // Step 5: Budget API Tests
+            addResult('info', '💰 STEP 5: Budget API Tests', 'Testing various budget API endpoints...');
+            await testBudgetAPIs(selectedProject.id, selectedHub.attributes?.region || 'AUS', credentials.threeLegToken);
+
+            // Step 6: Region Analysis
+            addResult('info', '🌍 STEP 6: Region Analysis', 'Analyzing region routing...');
+            analyzeRegionRouting(selectedHub);
+
+            // Step 7: Recommendations
+            addResult('info', '🎯 STEP 7: Recommendations', 'Providing recommendations...');
+            provideRecommendations();
+        }
+
+        async function testProjectDetailsAPI(hubId, projectId, token) {
+            const projectUrl = `https://developer.api.autodesk.com/project/v1/hubs/${hubId}/projects/${projectId}`;
+            addResult('info', 'Project API URL', projectUrl);
+
+            try {
+                const response = await fetch(projectUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                addResult('info', 'Project API Status', `Status: ${response.status}`);
+                addResult('info', 'Project API Headers', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('success', 'Project API Success', 'Project details retrieved successfully');
+                    addResult('info', 'Project Relationships', JSON.stringify(data.data?.relationships, null, 2));
+                    
+                    const costContainerId = data.data?.relationships?.cost?.data?.id;
+                    if (costContainerId) {
+                        addResult('success', 'Cost Container Found', `Container ID: ${costContainerId}`);
+                    } else {
+                        addResult('warning', 'No Cost Container', 'Cost Management may not be enabled for this project');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    addResult('error', 'Project API Failed', `Status: ${response.status}, Error: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('error', 'Project API Error', error.message);
+            }
+        }
+
+        async function testBudgetAPIs(projectId, region, token) {
+            const budgetTests = [
+                {
+                    name: 'Cost Management API (Container)',
+                    url: `https://developer.api.autodesk.com/cost/v1/containers/${projectId}/budgets`,
+                    region: region
+                },
+                {
+                    name: 'Cost Management API (Project)',
+                    url: `https://developer.api.autodesk.com/cost/v1/projects/${projectId}/budgets`,
+                    region: region
+                },
+                {
+                    name: 'Construction Cost API (Container)',
+                    url: `https://developer.api.autodesk.com/construction/cost/v1/containers/${projectId}/budgets`,
+                    region: region
+                },
+                {
+                    name: 'Construction Cost API (Project)',
+                    url: `https://developer.api.autodesk.com/construction/cost/v1/projects/${projectId}/budgets`,
+                    region: region
+                }
+            ];
+
+            for (const test of budgetTests) {
+                addResult('info', `🧪 Testing: ${test.name}`, `URL: ${test.url}`);
+                
+                try {
+                    const response = await fetch(test.url, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                            'region': test.region
+                        }
+                    });
+
+                    addResult('info', `${test.name} Status`, `Status: ${response.status}`);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const budgets = data.results || data.data || [];
+                        addResult('success', `${test.name} Success`, `Found ${budgets.length} budgets`);
+                        
+                        if (budgets.length > 0) {
+                            addResult('success', '🎉 BUDGETS FOUND!', `Successfully retrieved ${budgets.length} budgets using ${test.name}`);
+                            addResult('info', 'Budget Data Sample', JSON.stringify(budgets[0], null, 2));
+                            return; // Found budgets, stop testing
+                        }
+                    } else {
+                        const errorText = await response.text();
+                        addResult('error', `${test.name} Failed`, `Status: ${response.status}, Error: ${errorText}`);
+                    }
+                } catch (error) {
+                    addResult('error', `${test.name} Error`, error.message);
+                }
+            }
+        }
+
+        function analyzeRegionRouting(selectedHub) {
+            const region = selectedHub.attributes?.region;
+            const hubName = selectedHub.attributes?.name || selectedHub.name || '';
+            
+            addResult('info', 'Region Analysis', `Hub Region: ${region || 'Unknown'}`);
+            addResult('info', 'Hub Name Analysis', `Hub Name: ${hubName}`);
+            
+            if (hubName.toLowerCase().includes('cewa') || hubName.toLowerCase().includes('australia')) {
+                addResult('success', 'AU Hub Detected', 'Hub appears to be Australian (CEWA/Australia)');
+                addResult('info', 'Expected Region', 'Should use AUS region for API routing');
+            } else {
+                addResult('warning', 'Region Detection', 'Could not determine if this is an AU hub');
+            }
+        }
+
+        function provideRecommendations() {
+            const recommendations = [
+                '1. Verify Cost Management is enabled in ACC project settings',
+                '2. Check if budget data exists in ACC Cost Management module',
+                '3. Ensure correct region routing (AUS for Australia)',
+                '4. Verify user has Cost Management permissions',
+                '5. Try different project types that support Cost Management',
+                '6. Check if project is in the correct hub region',
+                '7. Verify OAuth scopes include data:read for Cost Management'
+            ];
+
+            addResult('info', '🎯 Recommendations', recommendations.join('\n'));
+        }
+
+        function addResult(type, title, content) {
+            debugResults.push({ type, title, content, timestamp: new Date().toISOString() });
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            let html = '';
+
+            debugResults.forEach(result => {
+                const statusClass = `status-${result.type}`;
+                const resultClass = result.type;
+                
+                html += `
+                    <div class="step ${resultClass}">
+                        <div class="step-header">
+                            <span class="status-indicator ${statusClass}"></span>
+                            ${result.title}
+                        </div>
+                        <div class="step-content">${result.content}</div>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            debugResults = [];
+        }
+
+        async function testSpecificEndpoint() {
+            const endpoint = prompt('Enter specific API endpoint to test:');
+            if (!endpoint) return;
+
+            addResult('info', '🧪 Testing Specific Endpoint', `URL: ${endpoint}`);
+            
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                if (!credentials.threeLegToken) {
+                    addResult('error', 'No Authentication', 'Please authenticate first');
+                    return;
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${credentials.threeLegToken}`,
+                        'Content-Type': 'application/json',
+                        'region': 'AUS'
+                    }
+                });
+
+                addResult('info', 'Response Status', `Status: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('success', 'Endpoint Success', 'API call successful');
+                    addResult('info', 'Response Data', JSON.stringify(data, null, 2));
+                } else {
+                    const errorText = await response.text();
+                    addResult('error', 'Endpoint Failed', `Status: ${response.status}, Error: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('error', 'Endpoint Error', error.message);
+            }
+
+            displayResults();
+        }
+
+        // Auto-run on page load if authenticated
+        window.onload = function() {
+            const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+            if (credentials.threeLegToken) {
+                addResult('info', '🔍 Ready for Analysis', 'Authentication detected. Click "Run Deep Dive Analysis" to start.');
+                displayResults();
+            } else {
+                addResult('warning', '⚠️ Authentication Required', 'Please authenticate with ACC first, then refresh this page.');
+                displayResults();
+            }
+        };
+    </script>
+</body>
+</html>

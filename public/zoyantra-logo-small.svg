@@ -1,0 +1,33 @@
+<svg width="64" height="64" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hexGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B0124A" />
+      <stop offset="100%" stop-color="#8B0E3A" />
+    </linearGradient>
+    <linearGradient id="circuitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F0B90F" />
+      <stop offset="100%" stop-color="#D4A017" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main hexagon shape -->
+  <path d="M256 40 Q276 40 292 48 L436 128 Q448 136 448 152 L448 360 Q448 376 436 384 L292 464 Q276 472 256 472 Q236 472 220 464 L76 384 Q64 376 64 360 L64 152 Q64 136 76 128 L220 48 Q236 40 256 40Z" 
+        fill="url(#hexGradient)"/>
+  
+  <!-- Circuit pattern - Top only -->
+  <g fill="none" stroke="url(#circuitGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Top left circuit -->
+    <path d="M170 120 L210 140 L240 110" />
+    <circle cx="170" cy="120" r="10" fill="#F0B90F" />
+    
+    <!-- Top right circuit -->
+    <path d="M342 120 L302 140 L272 110" />
+    <circle cx="342" cy="120" r="10" fill="#F0B90F" />
+  </g>
+  
+  
+  <!-- Central Z -->
+  <text x="256" y="300" text-anchor="middle" dominant-baseline="middle" 
+        font-family="Georgia, 'Times New Roman', serif" 
+        font-size="220" font-weight="700" fill="#F0B90F">Z</text>
+</svg>

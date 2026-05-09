@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug OAuth State</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #5a6fd8;
+        }
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug OAuth State</h1>
+        <p>This page helps debug the OAuth state parameter issue.</p>
+        
+        <div>
+            <button class="button" onclick="clearState()">Clear OAuth State</button>
+            <button class="button" onclick="testOAuthFlow()">Test OAuth Flow</button>
+            <button class="button" onclick="checkState()">Check Current State</button>
+        </div>
+        
+        <div id="debug-info" class="debug-info"></div>
+    </div>
+
+    <script>
+        function clearState() {
+            localStorage.removeItem('oauth_state');
+            sessionStorage.removeItem('oauth_state');
+            console.log('🧹 Cleared OAuth state from both localStorage and sessionStorage');
+            updateDebugInfo();
+        }
+
+        function testOAuthFlow() {
+            // Generate OAuth URL with state
+            const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+            const scope = encodeURIComponent('data:read data:write data:create data:search bucket:read bucket:create bucket:update bucket:delete account:read account:write user-profile:read user:read user:write viewables:read code:all openid');
+            const responseType = 'code';
+            const state = Math.random().toString(36).substring(2, 15);
+            
+            // Store state in localStorage (like the fixed implementation)
+            localStorage.setItem('oauth_state', state);
+            console.log('🔐 OAuth state stored:', state);
+            
+            const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?` +
+              `client_id=${clientId}&` +
+              `redirect_uri=${redirectUri}&` +
+              `response_type=${responseType}&` +
+              `scope=${scope}&` +
+              `state=${state}`;
+            
+            console.log('🔗 Generated OAuth URL:', authUrl);
+            
+            // Show debug info
+            updateDebugInfo();
+            
+            // Redirect to OAuth
+            window.location.href = authUrl;
+        }
+
+        function checkState() {
+            updateDebugInfo();
+        }
+
+        function updateDebugInfo() {
+            const storedState = localStorage.getItem('oauth_state');
+            const sessionState = sessionStorage.getItem('oauth_state');
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlState = urlParams.get('state');
+            const urlCode = urlParams.get('code');
+            
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.innerHTML = `
+<strong>OAuth State Debug Information:</strong>
+
+<strong>Stored State (localStorage):</strong> ${storedState || 'None'}
+<strong>Stored State (sessionStorage):</strong> ${sessionState || 'None'}
+<strong>URL State Parameter:</strong> ${urlState || 'None'}
+<strong>URL Code Parameter:</strong> ${urlCode ? 'Present' : 'None'}
+
+<strong>Current URL:</strong> ${window.location.href}
+
+<strong>State Match Check:</strong>
+${storedState && urlState ? 
+  (storedState === urlState ? 
+    '<span class="success">✅ States match!</span>' : 
+    '<span class="error">❌ States do not match!</span>') : 
+  '<span class="error">❌ Missing state parameter(s)</span>'}
+
+<strong>Recommendations:</strong>
+${!storedState ? '• Clear state and try OAuth flow again' : ''}
+${!urlState ? '• Make sure you\'re coming from OAuth callback' : ''}
+${storedState && urlState && storedState !== urlState ? '• State mismatch - possible CSRF or session issue' : ''}
+            `;
+        }
+
+        // Auto-update debug info on page load
+        window.onload = function() {
+            updateDebugInfo();
+        };
+    </script>
+</body>
+</html>

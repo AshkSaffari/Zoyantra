@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>Test Project</Name>
+  <Tasks>
+    <Task>
+      <UID>1</UID>
+      <Name>Task 1</Name>
+      <Start>2024-01-01T00:00:00</Start>
+      <Finish>2024-01-05T00:00:00</Finish>
+      <Duration>PT40H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Work>PT40H0M0S</Work>
+      <OutlineNumber>1</OutlineNumber>
+      <Status>Not Started</Status>
+      <Priority>Normal</Priority>
+    </Task>
+    <Task>
+      <UID>2</UID>
+      <Name>Task 2</Name>
+      <Start>2024-01-06T00:00:00</Start>
+      <Finish>2024-01-10T00:00:00</Finish>
+      <Duration>PT40H0M0S</Duration>
+      <PercentComplete>50</PercentComplete>
+      <Work>PT40H0M0S</Work>
+      <OutlineNumber>2</OutlineNumber>
+      <Status>In Progress</Status>
+      <Priority>High</Priority>
+    </Task>
+    <Task>
+      <UID>3</UID>
+      <Name>Task 3</Name>
+      <Start>2024-01-11T00:00:00</Start>
+      <Finish>2024-01-15T00:00:00</Finish>
+      <Duration>PT40H0M0S</Duration>
+      <PercentComplete>100</PercentComplete>
+      <Work>PT40H0M0S</Work>
+      <OutlineNumber>3</OutlineNumber>
+      <Status>Completed</Status>
+      <Priority>Normal</Priority>
+    </Task>
+  </Tasks>
+</Project>

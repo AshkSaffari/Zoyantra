@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Hubs Loading</title>
+</head>
+<body>
+    <h1>Debug Hubs Loading</h1>
+    <button onclick="testHubs()">Test Hubs Loading</button>
+    <div id="result"></div>
+
+    <script>
+        async function testHubs() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing hubs loading...</p>';
+            
+            try {
+                // First get a 2-legged token
+                console.log('Getting 2-legged token...');
+                const tokenResponse = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'client_credentials',
+                        client_id: 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                        client_secret: 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                        scope: 'data:read data:write bucket:read bucket:create viewables:read account:read account:write'
+                    })
+                });
+                
+                console.log('Token response status:', tokenResponse.status);
+                
+                if (!tokenResponse.ok) {
+                    const errorText = await tokenResponse.text();
+                    resultDiv.innerHTML = `<p>❌ Token request failed: ${tokenResponse.status}</p><pre>${errorText}</pre>`;
+                    return;
+                }
+                
+                const tokenData = await tokenResponse.json();
+                console.log('Token received:', tokenData);
+                
+                // Test Project API for hubs
+                console.log('Testing Project API...');
+                const projectResponse = await fetch('https://developer.api.autodesk.com/project/v1/hubs', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${tokenData.access_token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('Project API response status:', projectResponse.status);
+                
+                if (!projectResponse.ok) {
+                    const errorText = await projectResponse.text();
+                    resultDiv.innerHTML = `<p>❌ Project API Error: ${projectResponse.status}</p><pre>${errorText}</pre>`;
+                    return;
+                }
+                
+                const projectData = await projectResponse.json();
+                console.log('Project API response:', projectData);
+                
+                let html = '<h2>Project API Response:</h2>';
+                html += `<p>Total hubs: ${projectData.data?.length || 0}</p>`;
+                
+                if (projectData.data && projectData.data.length > 0) {
+                    html += '<h3>Hubs found:</h3><ul>';
+                    projectData.data.forEach((hub, index) => {
+                        html += `<li>
+                            <strong>${index + 1}. ${hub.attributes?.name || 'Unknown'}</strong><br>
+                            ID: ${hub.id}<br>
+                            Type: ${hub.attributes?.extension?.type || 'No extension type'}<br>
+                            Extension: ${JSON.stringify(hub.attributes?.extension || {})}
+                        </li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p>No hubs found</p>';
+                }
+                
+                // Also test Data Management API
+                console.log('Testing Data Management API...');
+                const dmResponse = await fetch('https://developer.api.autodesk.com/data/v1/hubs', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${tokenData.access_token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('Data Management API response status:', dmResponse.status);
+                
+                if (dmResponse.ok) {
+                    const dmData = await dmResponse.json();
+                    console.log('Data Management API response:', dmData);
+                    
+                    html += '<h2>Data Management API Response:</h2>';
+                    html += `<p>Total hubs: ${dmData.data?.length || 0}</p>`;
+                    
+                    if (dmData.data && dmData.data.length > 0) {
+                        html += '<h3>Data Management Hubs found:</h3><ul>';
+                        dmData.data.forEach((hub, index) => {
+                            html += `<li>
+                                <strong>${index + 1}. ${hub.attributes?.name || 'Unknown'}</strong><br>
+                                ID: ${hub.id}<br>
+                                Type: ${hub.attributes?.extension?.type || 'No extension type'}<br>
+                                Extension: ${JSON.stringify(hub.attributes?.extension || {})}
+                            </li>`;
+                        });
+                        html += '</ul>';
+                    } else {
+                        html += '<p>No Data Management hubs found</p>';
+                    }
+                } else {
+                    const dmErrorText = await dmResponse.text();
+                    html += `<p>❌ Data Management API Error: ${dmResponse.status}</p><pre>${dmErrorText}</pre>`;
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

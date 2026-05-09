@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEWA - Construction Project Manager</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        .access-button {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        .access-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        .info-box {
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .feature-list {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .feature-list li {
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+        .ip-address {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 1.1em;
+            margin: 10px 0;
+        }
+        .instructions {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🏗️</div>
+        <div style="font-size: 2.5em; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">
+            Autodesk Construction Cloud<br/>
+            <span style="font-size: 0.8em;">SMART BUILDZ</span>
+        </div>
+        <div class="subtitle">Stage 7</div>
+        
+        <div class="info-box">
+            <h3>🎯 What is SMART BUILDZ?</h3>
+            <p>SMART BUILDZ is a powerful Construction Project Management tool that integrates with Autodesk Construction Cloud to help you manage project phases, generate reports, and collaborate with your team.</p>
+        </div>
+
+        <div class="ip-address">
+            🌐 Access URL: http://192.168.1.10:3000
+        </div>
+
+        <a href="http://192.168.1.10:3000" class="access-button" target="_blank">
+            🚀 Open SMART BUILDZ Application
+        </a>
+
+        <div class="instructions">
+            <h3>📋 How to Use SMART BUILDZ:</h3>
+            <div class="step">
+                <strong>Step 1:</strong> Click the "Open SMART BUILDZ Application" button above
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Enter your Autodesk credentials (Account ID, Client ID, Client Secret)
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Get your 3-Leg Token using the "Get Token" button
+            </div>
+            <div class="step">
+                <strong>Step 4:</strong> Sign in and start managing your projects!
+            </div>
+        </div>
+
+        <div class="feature-list">
+            <h3>✨ Key Features:</h3>
+            <ul>
+                <li>🏢 <strong>Hub Management:</strong> Select and work with specific Autodesk hubs</li>
+                <li>📋 <strong>Project Selection:</strong> Choose individual projects for detailed management</li>
+                <li>📊 <strong>Phase Management:</strong> Set and track project phases locally</li>
+                <li>📈 <strong>Report Generation:</strong> Create PDF reports for selected projects</li>
+                <li>🔍 <strong>Advanced Filtering:</strong> Search and filter projects by phase</li>
+                <li>👥 <strong>Team Collaboration:</strong> Share access with team members</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>🔒 Security & Permissions:</h3>
+            <p>Each user needs their own Autodesk account credentials. SMART BUILDZ respects your organization's permissions - you'll only see projects and hubs you have access to.</p>
+        </div>
+
+        <div style="margin-top: 30px; color: #7f8c8d; font-size: 0.9em;">
+            <p>💡 <strong>Tip:</strong> Bookmark this page for easy access to SMART BUILDZ!</p>
+            <p>🔄 <strong>Note:</strong> Make sure the SMART BUILDZ server is running on the network.</p>
+        </div>
+    </div>
+</body>
+</html>

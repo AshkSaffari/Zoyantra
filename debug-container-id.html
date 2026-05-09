@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Container ID Issue</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .debug-section {
+            background: #f8f9fa;
+            border-left: 5px solid #dc3545;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Debug Container ID Issue</h1>
+            <p>404 Error Analysis - Container ID Not Found</p>
+        </div>
+        
+        <div class="content">
+            <div class="debug-section">
+                <h3>🎯 The Problem</h3>
+                <p><strong>Status 404</strong> means the container ID <code>e94b9bc8-1775-4d76-9b1d-c613e120ccff</code> doesn't exist or isn't accessible.</p>
+                
+                <h4>Possible Causes:</h4>
+                <ul>
+                    <li>❌ <strong>Wrong Container ID</strong> - The ID doesn't exist in your account</li>
+                    <li>❌ <strong>Wrong Region</strong> - Container is in different region (US vs AUS)</li>
+                    <li>❌ <strong>No Access</strong> - You don't have permission to access this container</li>
+                    <li>❌ <strong>Cost Management Not Enabled</strong> - Container doesn't have Cost Management</li>
+                    <li>❌ <strong>Wrong Hub</strong> - Container belongs to different hub</li>
+                </ul>
+            </div>
+
+            <div class="debug-section">
+                <h3>🔧 Debug Steps</h3>
+                <button onclick="debugContainerAccess()">🔍 Debug Container Access</button>
+                <button onclick="findCorrectContainerId()">🎯 Find Correct Container ID</button>
+                <button onclick="testDifferentRegions()">🌍 Test Different Regions</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        async function debugContainerAccess() {
+            addResult('info', '🔍 Debugging Container Access', 'Starting comprehensive analysis...');
+            
+            const accessToken = 'eyJhbGciOiJSUzI1NiIs...'; // Your token
+            const containerId = 'e94b9bc8-1775-4d76-9b1d-c613e120ccff';
+            
+            // Step 1: Test different regions
+            addResult('info', '🌍 Step 1: Testing Different Regions', 'Testing container access across regions...');
+            
+            const regions = ['AUS', 'US', 'EMEA'];
+            for (const region of regions) {
+                try {
+                    const url = `https://developer.api.autodesk.com/cost/v1/containers/${containerId}/budgets`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                            'region': region
+                        }
+                    });
+                    
+                    addResult('info', `Region ${region}`, `Status: ${response.status}`);
+                    
+                    if (response.status === 200) {
+                        addResult('success', '🎉 FOUND!', `Container accessible in ${region} region`);
+                        const data = await response.json();
+                        addResult('info', 'Budget Data', JSON.stringify(data, null, 2));
+                        return;
+                    }
+                } catch (error) {
+                    addResult('error', `Region ${region} Error`, error.message);
+                }
+            }
+            
+            // Step 2: Check if container exists in project data
+            addResult('info', '🔍 Step 2: Checking Project Data', 'Looking for container in project relationships...');
+            
+            try {
+                // Try to get project data to find the correct container ID
+                const projectUrl = 'https://developer.api.autodesk.com/project/v1/hubs'; // Get hubs first
+                const hubResponse = await fetch(projectUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (hubResponse.ok) {
+                    const hubData = await hubResponse.json();
+                    addResult('info', 'Available Hubs', JSON.stringify(hubData, null, 2));
+                    
+                    // Look for projects in each hub
+                    for (const hub of hubData.data || []) {
+                        try {
+                            const projectsUrl = `https://developer.api.autodesk.com/project/v1/hubs/${hub.id}/projects`;
+                            const projectsResponse = await fetch(projectsUrl, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (projectsResponse.ok) {
+                                const projectsData = await projectsResponse.json();
+                                addResult('info', `Projects in Hub ${hub.attributes?.name}`, JSON.stringify(projectsData, null, 2));
+                                
+                                // Check each project for cost container
+                                for (const project of projectsData.data || []) {
+                                    if (project.relationships?.cost?.data?.id) {
+                                        addResult('success', '✅ Found Cost Container!', 
+                                            `Project: ${project.attributes?.name}\nContainer ID: ${project.relationships.cost.data.id}`);
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            addResult('error', `Hub ${hub.id} Error`, error.message);
+                        }
+                    }
+                }
+            } catch (error) {
+                addResult('error', 'Project Data Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function findCorrectContainerId() {
+            addResult('info', '🎯 Finding Correct Container ID', 'Searching for valid container IDs...');
+            
+            const accessToken = 'eyJhbGciOiJSUzI1NiIs...';
+            
+            try {
+                // Get all hubs
+                const hubsUrl = 'https://developer.api.autodesk.com/project/v1/hubs';
+                const hubsResponse = await fetch(hubsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (hubsResponse.ok) {
+                    const hubsData = await hubsResponse.json();
+                    addResult('info', 'Available Hubs', `Found ${hubsData.data?.length || 0} hubs`);
+                    
+                    for (const hub of hubsData.data || []) {
+                        addResult('info', `Hub: ${hub.attributes?.name}`, `ID: ${hub.id}, Region: ${hub.attributes?.region}`);
+                        
+                        // Get projects for this hub
+                        try {
+                            const projectsUrl = `https://developer.api.autodesk.com/project/v1/hubs/${hub.id}/projects`;
+                            const projectsResponse = await fetch(projectsUrl, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (projectsResponse.ok) {
+                                const projectsData = await projectsResponse.json();
+                                addResult('info', `Projects in ${hub.attributes?.name}`, `Found ${projectsData.data?.length || 0} projects`);
+                                
+                                for (const project of projectsData.data || []) {
+                                    if (project.relationships?.cost?.data?.id) {
+                                        addResult('success', '✅ VALID CONTAINER FOUND!', 
+                                            `Hub: ${hub.attributes?.name}\nProject: ${project.attributes?.name}\nContainer ID: ${project.relationships.cost.data.id}\nRegion: ${hub.attributes?.region}`);
+                                        
+                                        // Test this container ID
+                                        await testContainerId(project.relationships.cost.data.id, hub.attributes?.region || 'US');
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            addResult('error', `Hub ${hub.id} Projects Error`, error.message);
+                        }
+                    }
+                }
+            } catch (error) {
+                addResult('error', 'Hub Search Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function testContainerId(containerId, region) {
+            addResult('info', `🧪 Testing Container ID: ${containerId}`, `Region: ${region}`);
+            
+            try {
+                const url = `https://developer.api.autodesk.com/cost/v1/containers/${containerId}/budgets`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer eyJhbGciOiJSUzI1NiIs...`,
+                        'Content-Type': 'application/json',
+                        'region': region
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('success', '🎉 CONTAINER WORKS!', `Found ${(data.results || data.data || []).length} budgets`);
+                    addResult('info', 'Budget Data', JSON.stringify(data, null, 2));
+                } else {
+                    addResult('error', 'Container Failed', `Status: ${response.status}`);
+                }
+            } catch (error) {
+                addResult('error', 'Container Test Error', error.message);
+            }
+        }
+
+        async function testDifferentRegions() {
+            addResult('info', '🌍 Testing Different Regions', 'Testing the same container ID across regions...');
+            
+            const containerId = 'e94b9bc8-1775-4d76-9b1d-c613e120ccff';
+            const accessToken = 'eyJhbGciOiJSUzI1NiIs...';
+            const regions = ['AUS', 'US', 'EMEA', 'JPN', 'IND'];
+            
+            for (const region of regions) {
+                try {
+                    const url = `https://developer.api.autodesk.com/cost/v1/containers/${containerId}/budgets`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                            'region': region
+                        }
+                    });
+                    
+                    addResult('info', `Region ${region}`, `Status: ${response.status}`);
+                    
+                    if (response.status === 200) {
+                        addResult('success', '🎉 SUCCESS!', `Container found in ${region} region`);
+                        const data = await response.json();
+                        addResult('info', 'Budget Data', JSON.stringify(data, null, 2));
+                        return;
+                    } else if (response.status !== 404) {
+                        const errorText = await response.text();
+                        addResult('warning', `Region ${region}`, `Status: ${response.status}, Error: ${errorText}`);
+                    }
+                } catch (error) {
+                    addResult('error', `Region ${region} Error`, error.message);
+                }
+            }
+            
+            addResult('error', '❌ Container Not Found', 'Container ID not found in any region');
+            displayResults();
+        }
+
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function displayResults() {
+            // Results are displayed as they're added
+        }
+    </script>
+</body>
+</html>

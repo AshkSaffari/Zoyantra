@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear OAuth State</title>
+</head>
+<body>
+    <h1>Clear OAuth State</h1>
+    <p>This will clear all OAuth state and allow you to sign in again.</p>
+    <button onclick="clearOAuthState()">Clear OAuth State</button>
+    <div id="result"></div>
+
+    <script>
+        function clearOAuthState() {
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                console.log('✅ localStorage cleared');
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                console.log('✅ sessionStorage cleared');
+                
+                // Clear any OAuth-related cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                console.log('✅ Cookies cleared');
+                
+                document.getElementById('result').innerHTML = '<p style="color: green;">✅ OAuth state cleared successfully! You can now refresh the main app.</p>';
+                
+                // Auto-refresh after 2 seconds
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:3000';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Error clearing OAuth state:', error);
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Error clearing OAuth state: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

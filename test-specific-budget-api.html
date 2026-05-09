@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Specific Budget API</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px;
+        }
+        .api-test {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .api-test h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover { 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Test Specific Budget API</h1>
+            <p>Test the exact ACC Cost Management API endpoint you provided</p>
+        </div>
+        
+        <div class="content">
+            <div class="api-test">
+                <h3>🔧 API Configuration</h3>
+                <div class="form-group">
+                    <label>Container ID:</label>
+                    <input type="text" id="containerId" value="e94b9bc8-1775-4d76-9b1d-c613e120ccff" placeholder="Enter container ID">
+                </div>
+                <div class="form-group">
+                    <label>Access Token:</label>
+                    <input type="text" id="accessToken" placeholder="Enter your access token">
+                </div>
+                <div class="form-group">
+                    <label>Region:</label>
+                    <select id="region">
+                        <option value="AUS">AUS (Australia)</option>
+                        <option value="US">US (United States)</option>
+                        <option value="EMEA">EMEA (Europe)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>API URL:</label>
+                    <input type="text" id="apiUrl" value="https://developer.api.autodesk.com/cost/v1/containers/{containerId}/budgets" readonly>
+                </div>
+                <button onclick="testBudgetAPI()">🚀 Test GET Budgets</button>
+                <button onclick="testCreateBudget()">➕ Test CREATE Budget</button>
+                <button onclick="loadFromLocalStorage()">📥 Load from App</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        function loadFromLocalStorage() {
+            // Try to load credentials from the main app
+            const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+            if (credentials.threeLegToken) {
+                document.getElementById('accessToken').value = credentials.threeLegToken;
+                addResult('success', '✅ Token Loaded', 'Access token loaded from main app');
+            } else {
+                addResult('warning', '⚠️ No Token Found', 'No access token found in localStorage. Please authenticate in the main app first.');
+            }
+
+            // Try to load selected project
+            const selectedProject = JSON.parse(localStorage.getItem('selectedProject') || '{}');
+            if (selectedProject.id) {
+                document.getElementById('containerId').value = selectedProject.id;
+                addResult('info', '📋 Project Loaded', `Project ID: ${selectedProject.id}`);
+            }
+
+            // Try to load selected hub
+            const selectedHub = JSON.parse(localStorage.getItem('selectedHub') || '{}');
+            if (selectedHub.attributes?.region) {
+                document.getElementById('region').value = selectedHub.attributes.region;
+                addResult('info', '🏢 Hub Loaded', `Hub region: ${selectedHub.attributes.region}`);
+            }
+
+            displayResults();
+        }
+
+        async function testBudgetAPI() {
+            const containerId = document.getElementById('containerId').value;
+            const accessToken = document.getElementById('accessToken').value;
+            const region = document.getElementById('region').value;
+
+            if (!containerId) {
+                addResult('error', '❌ Missing Container ID', 'Please enter a container ID');
+                displayResults();
+                return;
+            }
+
+            if (!accessToken) {
+                addResult('error', '❌ Missing Access Token', 'Please enter an access token');
+                displayResults();
+                return;
+            }
+
+            addResult('info', '🧪 Testing Budget API', `Container ID: ${containerId}`);
+            addResult('info', '🌍 Region', `Region: ${region}`);
+            addResult('info', '🔑 Token', `Token: ${accessToken.substring(0, 20)}...`);
+
+            const apiUrl = `https://developer.api.autodesk.com/cost/v1/containers/${containerId}/budgets`;
+            addResult('info', '🔗 API URL', apiUrl);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'region': region
+                    }
+                });
+
+                addResult('info', '📊 Response Status', `Status: ${response.status}`);
+                addResult('info', '📊 Response Headers', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('success', '✅ API Call Successful!', 'Budget API returned data');
+                    addResult('info', '📊 Response Data', JSON.stringify(data, null, 2));
+                    
+                    const budgets = data.results || data.data || [];
+                    if (budgets.length > 0) {
+                        addResult('success', '🎉 BUDGETS FOUND!', `Found ${budgets.length} budgets`);
+                        addResult('info', '💰 Budget Summary', `Total budgets: ${budgets.length}`);
+                        
+                        // Show first budget as example
+                        if (budgets[0]) {
+                            addResult('info', '📋 First Budget Example', JSON.stringify(budgets[0], null, 2));
+                        }
+                    } else {
+                        addResult('warning', '⚠️ No Budgets Found', 'API call successful but no budget data returned');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    addResult('error', '❌ API Call Failed', `Status: ${response.status}`);
+                    addResult('error', '❌ Error Response', errorText);
+                    
+                    // Try to parse error for more details
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        addResult('error', '❌ Error Details', JSON.stringify(errorData, null, 2));
+                    } catch (parseError) {
+                        addResult('error', '❌ Raw Error', errorText);
+                    }
+                }
+            } catch (error) {
+                addResult('error', '❌ Network Error', error.message);
+            }
+
+            displayResults();
+        }
+
+        async function testCreateBudget() {
+            const containerId = document.getElementById('containerId').value;
+            const accessToken = document.getElementById('accessToken').value;
+            const region = document.getElementById('region').value;
+
+            if (!containerId) {
+                addResult('error', '❌ Missing Container ID', 'Please enter a container ID');
+                displayResults();
+                return;
+            }
+
+            if (!accessToken) {
+                addResult('error', '❌ Missing Access Token', 'Please enter an access token');
+                displayResults();
+                return;
+            }
+
+            addResult('info', '➕ Testing CREATE Budget API', `Container ID: ${containerId}`);
+
+            const apiUrl = `https://developer.api.autodesk.com/cost/v1/containers/${containerId}/budgets`;
+            addResult('info', '🔗 API URL', apiUrl);
+
+            // Sample budget data based on your curl example
+            const budgetData = {
+                "parentId": "null",
+                "code": "84720010130000GEN",
+                "scope": "budgetAndCost",
+                "segmentCodeMap": {
+                    "42905750-8c20-11eb-b691-9d0026ec3ddc": "8472",
+                    "4299f440-8c20-11eb-b691-9d0026ec3ddc": "0010130000",
+                    "42927a30-8c20-11eb-b691-9d0026ec3ddc": "GEN"
+                },
+                "name": "Test Budget - " + new Date().toISOString(),
+                "quantity": 50,
+                "inputQuantity": 50,
+                "description": "Test budget created via API",
+                "unitPrice": "1000.0000",
+                "unit": "LS",
+                "locations": [
+                    "683904a0-47ce-4146-ac2d-a3840f00e0f4"
+                ],
+                "plannedStartDate": "2019-01-06",
+                "plannedEndDate": "2020-01-06",
+                "actualStartDate": "2019-01-06",
+                "actualEndDate": "2020-02-10",
+                "durationDays": 90,
+                "externalId": "10010-99-AB",
+                "externalSystem": "Sage300",
+                "externalMessage": "Success.",
+                "lastSyncTime": "2019-09-05T01:00:12.989Z",
+                "integrationState": "locked"
+            };
+
+            addResult('info', '📋 Budget Data', JSON.stringify(budgetData, null, 2));
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'region': region
+                    },
+                    body: JSON.stringify(budgetData)
+                });
+
+                addResult('info', '📊 Response Status', `Status: ${response.status}`);
+                addResult('info', '📊 Response Headers', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('success', '✅ Budget Created Successfully!', 'Budget was created via API');
+                    addResult('info', '📊 Created Budget Data', JSON.stringify(data, null, 2));
+                } else {
+                    const errorText = await response.text();
+                    addResult('error', '❌ Budget Creation Failed', `Status: ${response.status}`);
+                    addResult('error', '❌ Error Response', errorText);
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        addResult('error', '❌ Error Details', JSON.stringify(errorData, null, 2));
+                    } catch (parseError) {
+                        addResult('error', '❌ Raw Error', errorText);
+                    }
+                }
+            } catch (error) {
+                addResult('error', '❌ Network Error', error.message);
+            }
+
+            displayResults();
+        }
+
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function displayResults() {
+            // Results are already displayed as they're added
+        }
+
+        // Auto-load from localStorage on page load
+        window.onload = function() {
+            loadFromLocalStorage();
+        };
+    </script>
+</body>
+</html>

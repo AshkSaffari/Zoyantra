@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APAC Budget Debugger</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .debug-section {
+            background: #f8f9fa;
+            border-left: 5px solid #ff6b6b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: 1 / -1; }
+        .project-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+        }
+        .project-card.working {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .project-card.failed {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌏 APAC Budget Debugger</h1>
+            <p>Find Working Container IDs for APAC Projects - Test Different Methods</p>
+        </div>
+        
+        <div class="content">
+            <div class="debug-section">
+                <h3>🎯 APAC Budget Discovery</h3>
+                <p><strong>This tool will:</strong></p>
+                <ul>
+                    <li>🔍 <strong>Fetch all APAC projects</strong> from your hubs</li>
+                    <li>🧪 <strong>Test different container ID methods</strong> for each project</li>
+                    <li>💰 <strong>Find which projects have working budgets</strong></li>
+                    <li>📊 <strong>Show you the working container IDs</strong></li>
+                </ul>
+            </div>
+
+            <div class="debug-section">
+                <h3>🔑 Token Configuration</h3>
+                <p>Enter your access token manually if auto-loading fails:</p>
+                <input type="text" id="manualToken" placeholder="Enter your access token here..." style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; font-family: 'Courier New', monospace;" />
+                <button onclick="useManualToken()">🔑 Use Manual Token</button>
+                <button onclick="loadFromApp()">📱 Load from App</button>
+            </div>
+
+            <div class="debug-section">
+                <h3>🔧 Debug Methods</h3>
+                <div class="grid">
+                    <button onclick="discoverApacProjects()">🌏 Discover APAC Projects</button>
+                    <button onclick="testAllContainerMethods()">🧪 Test All Container Methods</button>
+                    <button onclick="findWorkingBudgets()">💰 Find Working Budgets</button>
+                    <button onclick="clearResults()">🗑️ Clear Results</button>
+                </div>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        let discoveredProjects = [];
+        let workingContainers = [];
+        let currentToken = null;
+
+        // Auto-load token on page load
+        function loadCurrentToken() {
+            try {
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                if (credentials.threeLegToken) {
+                    currentToken = credentials.threeLegToken;
+                    addResult('success', '✅ Token Loaded', `Using current token: ${credentials.threeLegToken.substring(0, 20)}...`);
+                    return credentials.threeLegToken;
+                } else {
+                    addResult('error', '❌ No Token Found', 'Please authenticate in the main app first or enter token manually');
+                    return null;
+                }
+            } catch (error) {
+                addResult('error', '❌ Token Error', error.message);
+                return null;
+            }
+        }
+
+        // Use manual token
+        function useManualToken() {
+            const manualToken = document.getElementById('manualToken').value.trim();
+            if (!manualToken) {
+                addResult('error', 'No Token Entered', 'Please enter a token in the input field');
+                return;
+            }
+            
+            currentToken = manualToken;
+            addResult('success', '✅ Manual Token Set', `Using manual token: ${manualToken.substring(0, 20)}...`);
+        }
+
+        // Load token from app
+        function loadFromApp() {
+            const token = loadCurrentToken();
+            if (token) {
+                document.getElementById('manualToken').value = token;
+                addResult('success', '✅ Token Loaded from App', 'Token copied to input field');
+            }
+        }
+
+        async function discoverApacProjects() {
+            addResult('info', '🌏 Discovering APAC Projects', 'Fetching all hubs and projects...');
+            
+            if (!currentToken) {
+                addResult('error', 'No Token Available', 'Please load token from app or enter manually');
+                return;
+            }
+            
+            try {
+
+                // Get all hubs
+                const hubsUrl = 'https://developer.api.autodesk.com/project/v1/hubs';
+                const hubsResponse = await fetch(hubsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!hubsResponse.ok) {
+                    addResult('error', 'Hubs API Failed', `Status: ${hubsResponse.status}`);
+                    return;
+                }
+
+                const hubsData = await hubsResponse.json();
+                addResult('info', 'Available Hubs', `Found ${hubsData.data?.length || 0} hubs`);
+
+                // Filter APAC hubs
+                const apacHubs = hubsData.data?.filter(hub => {
+                    const region = hub.attributes?.region;
+                    const name = hub.attributes?.name?.toLowerCase() || '';
+                    return region === 'AUS' || region === 'JPN' || region === 'IND' || 
+                           name.includes('australia') || name.includes('apac') || 
+                           name.includes('asia') || name.includes('sydney') || 
+                           name.includes('melbourne') || name.includes('tokyo');
+                }) || [];
+
+                addResult('info', 'APAC Hubs Found', `${apacHubs.length} APAC hubs identified`);
+
+                // Get projects from each APAC hub
+                for (const hub of apacHubs) {
+                    addResult('info', `Hub: ${hub.attributes?.name}`, `Region: ${hub.attributes?.region}, ID: ${hub.id}`);
+                    
+                    try {
+                        const projectsUrl = `https://developer.api.autodesk.com/project/v1/hubs/${hub.id}/projects`;
+                        const projectsResponse = await fetch(projectsUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${currentToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (projectsResponse.ok) {
+                            const projectsData = await projectsResponse.json();
+                            const projects = projectsData.data || [];
+                            
+                            addResult('info', `Projects in ${hub.attributes?.name}`, `Found ${projects.length} projects`);
+                            
+                            // Store projects with hub info
+                            for (const project of projects) {
+                                discoveredProjects.push({
+                                    ...project,
+                                    hubName: hub.attributes?.name,
+                                    hubId: hub.id,
+                                    hubRegion: hub.attributes?.region
+                                });
+                            }
+                        } else {
+                            addResult('error', `Hub ${hub.attributes?.name} Failed`, `Status: ${projectsResponse.status}`);
+                        }
+                    } catch (error) {
+                        addResult('error', `Hub ${hub.id} Error`, error.message);
+                    }
+                }
+
+                addResult('success', '✅ APAC Projects Discovered', `Found ${discoveredProjects.length} APAC projects`);
+                
+                // Display projects
+                for (const project of discoveredProjects.slice(0, 5)) { // Show first 5
+                    addResult('info', `Project: ${project.attributes?.name}`, 
+                        `ID: ${project.id}\nHub: ${project.hubName}\nRegion: ${project.hubRegion}\nStatus: ${project.attributes?.status}`);
+                }
+
+            } catch (error) {
+                addResult('error', 'Discovery Error', error.message);
+            }
+            
+            displayResults();
+        }
+
+        async function testAllContainerMethods() {
+            if (discoveredProjects.length === 0) {
+                addResult('error', 'No Projects', 'Run "Discover APAC Projects" first');
+                return;
+            }
+
+            addResult('info', '🧪 Testing All Container Methods', `Testing ${discoveredProjects.length} projects...`);
+            
+            if (!currentToken) {
+                addResult('error', 'No Token Available', 'Please load token from app or enter manually');
+                return;
+            }
+
+            // Test different container ID methods for each project
+            for (const project of discoveredProjects.slice(0, 10)) { // Test first 10 projects
+                addResult('info', `Testing Project: ${project.attributes?.name}`, `ID: ${project.id}`);
+                
+                const containerMethods = [
+                    // Method 1: Use project ID directly
+                    { name: 'Project ID Direct', id: project.id, region: project.hubRegion || 'AUS' },
+                    
+                    // Method 2: Use project ID with different regions
+                    { name: 'Project ID + AUS', id: project.id, region: 'AUS' },
+                    { name: 'Project ID + US', id: project.id, region: 'US' },
+                    { name: 'Project ID + EMEA', id: project.id, region: 'EMEA' },
+                    
+                    // Method 3: Try to get cost container from project relationships
+                    { name: 'Cost Container from Project', id: project.relationships?.cost?.data?.id, region: project.hubRegion || 'AUS' },
+                ];
+
+                for (const method of containerMethods) {
+                    if (!method.id) continue; // Skip if no ID
+                    
+                    try {
+                        const url = `https://developer.api.autodesk.com/cost/v1/containers/${method.id}/budgets`;
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${currentToken}`,
+                                'Content-Type': 'application/json',
+                                'region': method.region
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const budgetCount = (data.results || data.data || []).length;
+                            
+                            if (budgetCount > 0) {
+                                addResult('success', `🎉 WORKING METHOD FOUND!`, 
+                                    `Project: ${project.attributes?.name}\nMethod: ${method.name}\nContainer ID: ${method.id}\nRegion: ${method.region}\nBudgets: ${budgetCount}`);
+                                
+                                workingContainers.push({
+                                    project: project,
+                                    method: method,
+                                    budgetCount: budgetCount,
+                                    budgetData: data
+                                });
+                            } else {
+                                addResult('warning', `⚠️ Method ${method.name}`, `No budgets found for container ${method.id}`);
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            addResult('info', `❌ Method ${method.name}`, `Status: ${response.status} - ${errorText.substring(0, 100)}...`);
+                        }
+                    } catch (error) {
+                        addResult('info', `❌ Method ${method.name}`, `Error: ${error.message}`);
+                    }
+                }
+            }
+
+            addResult('success', '✅ Container Testing Complete', `Found ${workingContainers.length} working containers`);
+            displayResults();
+        }
+
+        async function findWorkingBudgets() {
+            if (workingContainers.length === 0) {
+                addResult('error', 'No Working Containers', 'Run "Test All Container Methods" first');
+                return;
+            }
+
+            addResult('info', '💰 Finding Working Budgets', `Testing ${workingContainers.length} working containers...`);
+            
+            if (!currentToken) {
+                addResult('error', 'No Token Available', 'Please load token from app or enter manually');
+                return;
+            }
+
+            for (const container of workingContainers) {
+                addResult('success', `🎉 WORKING BUDGET CONTAINER`, 
+                    `Project: ${container.project.attributes?.name}\nHub: ${container.project.hubName}\nContainer ID: ${container.method.id}\nRegion: ${container.method.region}\nBudgets: ${container.budgetCount}`);
+                
+                // Show sample budget data
+                if (container.budgetData.results && container.budgetData.results.length > 0) {
+                    const sampleBudget = container.budgetData.results[0];
+                    addResult('info', 'Sample Budget Data', JSON.stringify(sampleBudget, null, 2));
+                }
+            }
+
+            // Summary
+            addResult('success', '🎯 SUMMARY - Working Container IDs', 
+                workingContainers.map(c => 
+                    `Project: ${c.project.attributes?.name}\nContainer ID: ${c.method.id}\nRegion: ${c.method.region}\nBudgets: ${c.budgetCount}`
+                ).join('\n\n'));
+
+            displayResults();
+        }
+
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            discoveredProjects = [];
+            workingContainers = [];
+        }
+
+        function displayResults() {
+            // Results are displayed as they're added
+        }
+
+        // Auto-load token when page loads
+        window.onload = function() {
+            addResult('info', '🚀 APAC Budget Debugger Ready', 'Loading current authentication...');
+            loadCurrentToken();
+        };
+    </script>
+</body>
+</html>

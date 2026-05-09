@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main App Budget Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .container { max-width: 800px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Main App Budget Fix Test</h1>
+        <p>This test verifies that the main app now uses the exact same approach as the working debugger.</p>
+        
+        <div>
+            <button onclick="testMainAppBudgetFetch()">🧪 Test Main App Budget Fetch</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `
+                <strong>${title}</strong><br>
+                ${content}<br>
+                <small>${new Date().toLocaleTimeString()}</small>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testMainAppBudgetFetch() {
+            addResult('info', '🧪 Testing Main App Budget Fetch', 'Using the exact same approach as the working debugger...');
+            
+            try {
+                // Get credentials from localStorage
+                const credentials = JSON.parse(localStorage.getItem('credentials') || '{}');
+                if (!credentials.threeLegToken) {
+                    addResult('error', '❌ No Token', 'Please authenticate in the main app first');
+                    return;
+                }
+
+                // Get selected project and hub
+                const selectedProject = JSON.parse(localStorage.getItem('selectedProject') || '{}');
+                const selectedHub = JSON.parse(localStorage.getItem('selectedHub') || '{}');
+                
+                if (!selectedProject.id || !selectedHub.id) {
+                    addResult('error', '❌ No Project/Hub', 'Please select a project and hub in the main app first');
+                    return;
+                }
+
+                addResult('info', '📋 Project Info', `Project: ${selectedProject.name} (${selectedProject.id})`);
+                addResult('info', '🏢 Hub Info', `Hub: ${selectedHub.name} (${selectedHub.id})`);
+
+                // Use the EXACT SAME methods as the working debugger
+                const cleanProjectId = selectedProject.id.startsWith('b.') ? selectedProject.id.substring(2) : selectedProject.id;
+                const containerMethods = [
+                    { name: 'Project ID Direct', id: cleanProjectId, region: 'AUS' },
+                    { name: 'Project ID + AUS', id: cleanProjectId, region: 'AUS' },
+                    { name: 'Cost Container from Project', id: cleanProjectId, region: 'AUS' }
+                ];
+                
+                for (const method of containerMethods) {
+                    try {
+                        addResult('info', `🧪 Testing ${method.name}`, `ID: ${method.id}, Region: ${method.region}`);
+                        
+                        const url = `https://developer.api.autodesk.com/cost/v1/containers/${method.id}/budgets`;
+                        
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${credentials.threeLegToken}`,
+                                'Content-Type': 'application/json',
+                                'region': method.region
+                            }
+                        });
+                        
+                        addResult('info', `📊 ${method.name} Response`, `Status: ${response.status}`);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            const budgets = data.results || data.data || [];
+                            
+                            if (budgets.length > 0) {
+                                addResult('success', `🎉 SUCCESS: ${method.name}`, `Found ${budgets.length} budgets!`);
+                                addResult('info', '💰 Budget Details', budgets.slice(0, 3).map(b => `- ${b.name || b.attributes?.name || 'Unnamed'}: $${b.originalAmount || b.attributes?.originalAmount || 0}`).join('<br>'));
+                                return; // Success, stop testing
+                            } else {
+                                addResult('info', `⚠️ ${method.name}`, 'No budgets found for this container');
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            addResult('error', `❌ ${method.name}`, `Status: ${response.status} - ${errorText.substring(0, 100)}...`);
+                        }
+                    } catch (error) {
+                        addResult('error', `❌ ${method.name}`, `Error: ${error.message}`);
+                    }
+                }
+                
+                addResult('error', '❌ All Methods Failed', 'No working method found for budget fetching');
+                
+            } catch (error) {
+                addResult('error', '❌ Test Error', error.message);
+            }
+        }
+
+        // Auto-load on page load
+        window.onload = function() {
+            addResult('info', '🚀 Main App Budget Fix Test Ready', 'Click "Test Main App Budget Fetch" to verify the fix');
+        };
+    </script>
+</body>
+</html>

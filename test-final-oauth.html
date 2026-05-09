@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final OAuth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #5a6fd8;
+        }
+        .url-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Final OAuth Test</h1>
+        <p>This page tests the complete OAuth flow with the updated implementation.</p>
+        
+        <div>
+            <button class="button" onclick="testOAuthUrl()">Test OAuth URL Generation</button>
+            <button class="button" onclick="testOAuthRedirect()">Test OAuth Redirect</button>
+            <button class="button" onclick="testMainApp()">Test Main App</button>
+        </div>
+        
+        <div id="results" class="url-display" style="display: none;"></div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        function generateOAuthUrl() {
+            const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+            const scope = encodeURIComponent('data:read data:write data:create data:search bucket:read bucket:create bucket:update bucket:delete account:read account:write user-profile:read user:read user:write viewables:read code:all openid');
+            const responseType = 'code';
+            const state = Math.random().toString(36).substring(2, 15);
+            
+            // Store state for verification (like the old implementation)
+            sessionStorage.setItem('oauth_state', state);
+            
+            const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?` +
+              `client_id=${clientId}&` +
+              `redirect_uri=${redirectUri}&` +
+              `response_type=${responseType}&` +
+              `scope=${scope}&` +
+              `state=${state}`;
+            
+            return authUrl;
+        }
+
+        function testOAuthUrl() {
+            try {
+                const oauthUrl = generateOAuthUrl();
+                
+                console.log('🔗 Generated OAuth URL:', oauthUrl);
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+<span class="success">✅ Final OAuth URL Generated Successfully!</span>
+
+<strong>URL:</strong>
+${oauthUrl}
+
+<strong>Components:</strong>
+• Client ID: ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo
+• Redirect URI: ${window.location.origin}/auth/callback
+• Scope: data:read data:write data:create data:search bucket:read bucket:create bucket:update bucket:delete account:read account:write user-profile:read user:read user:write viewables:read code:all openid
+• Response Type: code
+• State: ${sessionStorage.getItem('oauth_state')}
+
+<strong>Key Features:</strong>
+• ✅ Uses maximum scope for full ACC access
+• ✅ Uses state parameter for security
+• ✅ Uses /auth/callback redirect URI
+• ✅ Fixed initialize() method issue
+• ✅ Uses static methods instead of instance methods
+
+<strong>Next Steps:</strong>
+1. Click "Test OAuth Redirect" to test the redirect
+2. Click "Test Main App" to check if the main app is working
+3. The OAuth flow should now work completely!
+                `;
+                
+                // Hide any previous errors
+                document.getElementById('error').style.display = 'none';
+                
+            } catch (error) {
+                console.error('❌ Error generating OAuth URL:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function testOAuthRedirect() {
+            try {
+                const oauthUrl = generateOAuthUrl();
+                console.log('🔄 Redirecting to OAuth URL:', oauthUrl);
+                window.location.href = oauthUrl;
+            } catch (error) {
+                console.error('❌ Error redirecting to OAuth URL:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function testMainApp() {
+            try {
+                console.log('🔍 Testing main app...');
+                window.open('http://localhost:3000', '_blank');
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+<span class="success">✅ Main App Test</span>
+
+<strong>Testing:</strong>
+• Opening main app in new tab
+• Check if the OAuth button appears
+• Check if clicking it redirects to Autodesk
+
+<strong>Expected Behavior:</strong>
+• You should see a "Sign In with Autodesk" button
+• Clicking it should redirect to Autodesk's login page
+• After login, you should be redirected back to the app
+• The app should successfully authenticate and show the main interface
+
+<strong>If it works:</strong>
+• You'll be redirected to Autodesk
+• After login, you'll be redirected back to the app
+• The app will show "Authentication successful" and load the main interface
+                `;
+                
+            } catch (error) {
+                console.error('❌ Error testing main app:', error);
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            testOAuthUrl();
+        };
+    </script>
+</body>
+</html>

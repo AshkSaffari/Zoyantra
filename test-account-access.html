@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Access Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .warning { background-color: #fff3cd; }
+        .info { background-color: #d1ecf1; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Account Access Test</h1>
+    
+    <div class="section info">
+        <h3>Instructions</h3>
+        <p>1. Make sure you're logged into the main app</p>
+        <p>2. Open browser console (F12) and copy your access token</p>
+        <p>3. Paste it below and click "Test Access"</p>
+    </div>
+    
+    <div class="section">
+        <h3>Test Your Token</h3>
+        <input type="text" id="tokenInput" placeholder="Paste your access token here" style="width: 100%; padding: 10px; margin: 10px 0;">
+        <br>
+        <button onclick="testToken()">Test Access</button>
+        <button onclick="getTokenFromApp()">Get Token from App</button>
+    </div>
+    
+    <div class="section">
+        <h3>Test Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const logElement = document.createElement('div');
+            logElement.className = `section ${type}`;
+            logElement.innerHTML = `<pre>${message}</pre>`;
+            resultsDiv.appendChild(logElement);
+            console.log(message);
+        }
+
+        function getTokenFromApp() {
+            // Try to get token from localStorage
+            try {
+                const credentials = JSON.parse(localStorage.getItem('zoyantra_credentials'));
+                if (credentials && credentials.threeLegToken) {
+                    document.getElementById('tokenInput').value = credentials.threeLegToken;
+                    log('✅ Token found in localStorage', 'success');
+                } else {
+                    log('❌ No token found in localStorage', 'error');
+                }
+            } catch (error) {
+                log('❌ Error reading localStorage: ' + error.message, 'error');
+            }
+        }
+
+        async function testToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            
+            if (!token) {
+                log('❌ Please enter a token first', 'error');
+                return;
+            }
+            
+            log('🔍 Testing token: ' + token.substring(0, 20) + '...', 'info');
+            
+            // Test 1: Validate token
+            log('\n📋 Test 1: Validating Token', 'info');
+            try {
+                const userResponse = await fetch('https://developer.api.autodesk.com/userprofile/v1/users/@me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    log(`✅ Token is valid\n👤 User: ${userData.firstName} ${userData.lastName}\n📧 Email: ${userData.emailId}`, 'success');
+                } else {
+                    log(`❌ Token validation failed: ${userResponse.status}`, 'error');
+                    const errorData = await userResponse.text();
+                    log(`Error: ${errorData}`, 'error');
+                    return;
+                }
+            } catch (error) {
+                log(`❌ Token validation error: ${error.message}`, 'error');
+                return;
+            }
+            
+            // Test 2: ACC Accounts
+            log('\n📋 Test 2: ACC Accounts API', 'info');
+            try {
+                const accResponse = await fetch('https://developer.api.autodesk.com/construction/admin/v1/accounts', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Status: ${accResponse.status} ${accResponse.statusText}`, 'info');
+                
+                if (accResponse.ok) {
+                    const accData = await accResponse.json();
+                    log(`✅ ACC Accounts found: ${accData.data?.length || 0}`, 'success');
+                    if (accData.data && accData.data.length > 0) {
+                        log('📋 Account details:', 'info');
+                        accData.data.forEach((account, index) => {
+                            log(`   ${index + 1}. ${account.name} (${account.id})`, 'info');
+                        });
+                    }
+                } else {
+                    const errorData = await accResponse.text();
+                    log(`❌ ACC Accounts API failed: ${errorData}`, 'error');
+                    
+                    if (accResponse.status === 404) {
+                        log('\n🔍 Possible reasons for 404:', 'warning');
+                        log('   1. Your account has no ACC accounts', 'warning');
+                        log('   2. Your OAuth app doesn\'t have Construction Admin API access', 'warning');
+                        log('   3. Your account is not provisioned for ACC', 'warning');
+                        log('   4. You need to be added to an ACC account by an admin', 'warning');
+                    }
+                }
+            } catch (error) {
+                log(`❌ ACC Accounts API error: ${error.message}`, 'error');
+            }
+            
+            // Test 3: Data Management API
+            log('\n📋 Test 3: Data Management API (BIM 360)', 'info');
+            try {
+                const dmResponse = await fetch('https://developer.api.autodesk.com/data/v1/hubs', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Status: ${dmResponse.status} ${dmResponse.statusText}`, 'info');
+                
+                if (dmResponse.ok) {
+                    const dmData = await dmResponse.json();
+                    log(`✅ BIM 360 Hubs found: ${dmData.data?.length || 0}`, 'success');
+                    if (dmData.data && dmData.data.length > 0) {
+                        log('📋 Hub details:', 'info');
+                        dmData.data.forEach((hub, index) => {
+                            log(`   ${index + 1}. ${hub.attributes.name} (${hub.id})`, 'info');
+                        });
+                    }
+                } else {
+                    const errorData = await dmResponse.text();
+                    log(`❌ Data Management API failed: ${errorData}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Data Management API error: ${error.message}`, 'error');
+            }
+            
+            // Test 4: Check OAuth app permissions
+            log('\n📋 Test 4: OAuth App Permissions Check', 'info');
+            log('🔍 Please check your OAuth app in Autodesk Developer Portal:', 'info');
+            log('   1. Go to https://forge.autodesk.com/myapps', 'info');
+            log('   2. Find your app: ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo', 'info');
+            log('   3. Check if these APIs are enabled:', 'info');
+            log('      - Data Management API', 'info');
+            log('      - Autodesk Construction Cloud API', 'info');
+            log('      - Construction Admin API', 'info');
+            log('   4. Make sure the scopes include: account:read', 'info');
+            
+            log('\n✅ Test complete!', 'success');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test APAC Patterns</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #333; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .result {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 5px solid #28a745; background: #d4edda; }
+        .error { border-left: 5px solid #dc3545; background: #f8d7da; }
+        .warning { border-left: 5px solid #ffc107; background: #fff3cd; }
+        .info { border-left: 5px solid #17a2b8; background: #d1ecf1; }
+        button { 
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌏 Test APAC Patterns</h1>
+            <p>Test Different Container ID and Endpoint Patterns for APAC Projects</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h3>🧪 Test Different Patterns</h3>
+                <p>Test various container ID formats and API endpoints for APAC projects:</p>
+                
+                <input type="text" id="testId" placeholder="Enter container/project ID to test..." value="e94b9bc8-1775-4d76-9b1d-c613e120ccff" />
+                <button onclick="testAllPatterns()">🧪 Test All Patterns</button>
+                <button onclick="testApacEndpoints()">🌏 Test APAC Endpoints</button>
+                <button onclick="testDifferentRegions()">🌍 Test Different Regions</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const accessToken = 'eyJhbGciOiJSUzI1NiIs...'; // Your token
+
+        async function testAllPatterns() {
+            const testId = document.getElementById('testId').value;
+            if (!testId) {
+                addResult('error', 'No ID Provided', 'Please enter a container/project ID to test');
+                return;
+            }
+            
+            addResult('info', '🧪 Testing All Patterns', `Testing ID: ${testId}`);
+            
+            // Test different endpoint patterns
+            const patterns = [
+                // Standard cost API
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets`, region: 'AUS', name: 'Standard Cost API (AUS)' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets`, region: 'US', name: 'Standard Cost API (US)' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets`, region: 'EMEA', name: 'Standard Cost API (EMEA)' },
+                
+                // Construction cost API
+                { url: `https://developer.api.autodesk.com/construction/cost/v1/containers/${testId}/budgets`, region: 'AUS', name: 'Construction Cost API (AUS)' },
+                { url: `https://developer.api.autodesk.com/construction/cost/v1/containers/${testId}/budgets`, region: 'US', name: 'Construction Cost API (US)' },
+                
+                // Project-based endpoints
+                { url: `https://developer.api.autodesk.com/cost/v1/projects/${testId}/budgets`, region: 'AUS', name: 'Project Cost API (AUS)' },
+                { url: `https://developer.api.autodesk.com/construction/cost/v1/projects/${testId}/budgets`, region: 'AUS', name: 'Construction Project API (AUS)' },
+                
+                // APAC-specific patterns
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=AUS`, region: 'AUS', name: 'Cost API with AUS region param' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=APAC`, region: 'APAC', name: 'Cost API with APAC region param' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=AU`, region: 'AU', name: 'Cost API with AU region param' },
+            ];
+            
+            for (const pattern of patterns) {
+                await testEndpoint(pattern.url, pattern.region, pattern.name);
+            }
+            
+            displayResults();
+        }
+
+        async function testApacEndpoints() {
+            const testId = document.getElementById('testId').value;
+            if (!testId) {
+                addResult('error', 'No ID Provided', 'Please enter a container/project ID to test');
+                return;
+            }
+            
+            addResult('info', '🌏 Testing APAC-Specific Endpoints', `Testing ID: ${testId}`);
+            
+            // APAC-specific endpoint variations
+            const apacEndpoints = [
+                // Different regional parameters
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=AUS`, name: 'AUS Region Parameter' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=APAC`, name: 'APAC Region Parameter' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=AU`, name: 'AU Region Parameter' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?region=AUSTRALIA`, name: 'AUSTRALIA Region Parameter' },
+                
+                // Different API versions
+                { url: `https://developer.api.autodesk.com/cost/v2/containers/${testId}/budgets`, name: 'Cost API v2' },
+                { url: `https://developer.api.autodesk.com/construction/cost/v2/containers/${testId}/budgets`, name: 'Construction Cost API v2' },
+                
+                // Different path structures
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?filter[region]=AUS`, name: 'AUS Filter Parameter' },
+                { url: `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets?filter[region]=APAC`, name: 'APAC Filter Parameter' },
+            ];
+            
+            for (const endpoint of apacEndpoints) {
+                await testEndpoint(endpoint.url, 'AUS', endpoint.name);
+            }
+            
+            displayResults();
+        }
+
+        async function testDifferentRegions() {
+            const testId = document.getElementById('testId').value;
+            if (!testId) {
+                addResult('error', 'No ID Provided', 'Please enter a container/project ID to test');
+                return;
+            }
+            
+            addResult('info', '🌍 Testing Different Regions', `Testing ID: ${testId}`);
+            
+            const regions = ['AUS', 'US', 'EMEA', 'JPN', 'IND', 'CAN', 'GBR', 'DEU'];
+            const baseUrl = `https://developer.api.autodesk.com/cost/v1/containers/${testId}/budgets`;
+            
+            for (const region of regions) {
+                await testEndpoint(baseUrl, region, `Region: ${region}`);
+            }
+            
+            displayResults();
+        }
+
+        async function testEndpoint(url, region, name) {
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'region': region
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const budgetCount = (data.results || data.data || []).length;
+                    addResult('success', `🎉 ${name} - SUCCESS!`, 
+                        `URL: ${url}\nRegion: ${region}\nStatus: ${response.status}\nBudgets Found: ${budgetCount}`);
+                    
+                    if (budgetCount > 0) {
+                        addResult('info', 'Budget Data Sample', JSON.stringify(data, null, 2));
+                    }
+                } else {
+                    const errorText = await response.text();
+                    addResult('warning', `⚠️ ${name} - Failed`, 
+                        `URL: ${url}\nRegion: ${region}\nStatus: ${response.status}\nError: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('error', `❌ ${name} - Error`, 
+                    `URL: ${url}\nRegion: ${region}\nError: ${error.message}`);
+            }
+        }
+
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}:</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function displayResults() {
+            // Results are displayed as they're added
+        }
+    </script>
+</body>
+</html>

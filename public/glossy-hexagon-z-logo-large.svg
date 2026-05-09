@@ -1,0 +1,19 @@
+<svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#33A1FF" />
+      <stop offset="100%" stop-color="#0057D8" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  
+  <path d="M50 5 L90 25 Q95 27 95 35 L95 65 Q95 73 90 75 L50 95 L10 75 Q5 73 5 65 L5 35 Q5 27 10 25 Z" 
+        fill="url(#blueGradient)" 
+        stroke="#004FC5" 
+        stroke-width="2" 
+        filter="url(#shadow)"/>
+  
+  <text x="50" y="60" font-size="45" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Arial">Z</text>
+</svg>

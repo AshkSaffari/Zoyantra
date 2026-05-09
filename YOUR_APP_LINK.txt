@@ -1,0 +1,41 @@
+🌐 YOUR TIMESHEET APP IS NOW SHAREABLE!
+
+📱 SHARE THIS LINK WITH OTHERS:
+http://192.168.1.10:3000
+
+🔗 DIRECT ACCESS:
+- On this computer: http://localhost:3000
+- On other devices: http://192.168.1.10:3000
+
+📋 WHO CAN ACCESS:
+- Anyone connected to your WiFi network
+- Family members, colleagues, friends on the same WiFi
+- Works on phones, tablets, laptops, any device with a browser
+
+🚀 HOW TO SHARE:
+1. Copy this link: http://192.168.1.10:3000
+2. Send it via WhatsApp, email, text message
+3. Or tell people to type it in their browser
+
+✅ FEATURES AVAILABLE:
+- Complete timesheet management
+- ACC Performance Tracking integration
+- Archive system
+- CSV export
+- Budget filtering
+- Professional interface
+
+🛑 TO STOP THE SERVER:
+- Press Ctrl+C in the terminal window
+
+📱 TEST IT:
+- Open your phone's browser
+- Go to: http://192.168.1.10:3000
+- The timesheet app should load!
+
+---
+Generated on: September 20, 2025
+Your IP Address: 192.168.1.10
+Port: 3000
+Status: RUNNING
+

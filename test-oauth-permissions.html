@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Permissions Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 OAuth Permissions Test</h1>
+    
+    <div class="test-section">
+        <h3>Current OAuth App Configuration</h3>
+        <p><strong>Client ID:</strong> ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo</p>
+        <p><strong>Redirect URI:</strong> http://localhost:3000/auth/callback</p>
+        <p><strong>Scopes:</strong> data:read data:write data:create data:search bucket:read bucket:create account:read</p>
+    </div>
+
+    <div class="test-section">
+        <h3>Test OAuth Flow</h3>
+        <p>Click the button below to test the OAuth flow and see what permissions are requested:</p>
+        <button onclick="testOAuthFlow()">Test OAuth Flow</button>
+        <button onclick="testOAuthFlowNewTab()">Test OAuth Flow (New Tab)</button>
+    </div>
+
+    <div class="test-section">
+        <h3>OAuth URL Generator</h3>
+        <p>Generate OAuth URL with different scopes to test:</p>
+        <button onclick="generateOAuthUrl('data:read')">Basic Data Read</button>
+        <button onclick="generateOAuthUrl('data:read data:write')">Data Read/Write</button>
+        <button onclick="generateOAuthUrl('data:read data:write data:create data:search bucket:read bucket:create account:read')">Full ACC Scopes</button>
+        <button onclick="generateOAuthUrl('code:all')">Code All (Current)</button>
+    </div>
+
+    <div class="test-section">
+        <h3>API Endpoint Test</h3>
+        <p>Test different API endpoints to see which ones work:</p>
+        <button onclick="testDataManagementAPI()">Test Data Management API</button>
+        <button onclick="testACCAPI()">Test ACC Admin API</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+        const redirectUri = 'http://localhost:3000/auth/callback';
+
+        function generateOAuthUrl(scopes) {
+            const encodedScopes = encodeURIComponent(scopes);
+            const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodedScopes}&code_challenge=test&code_challenge_method=S256`;
+            
+            document.getElementById('results').innerHTML = `
+                <div class="test-section">
+                    <h4>Generated OAuth URL for scopes: ${scopes}</h4>
+                    <pre>${authUrl}</pre>
+                    <button onclick="window.open('${authUrl}', '_blank')">Open in New Tab</button>
+                </div>
+            `;
+        }
+
+        function testOAuthFlow() {
+            const scopes = 'data:read data:write data:create data:search bucket:read bucket:create account:read';
+            generateOAuthUrl(scopes);
+            // Also redirect main window
+            const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge=test&code_challenge_method=S256`;
+            window.location.href = authUrl;
+        }
+
+        function testOAuthFlowNewTab() {
+            const scopes = 'data:read data:write data:create data:search bucket:read bucket:create account:read';
+            const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge=test&code_challenge_method=S256`;
+            window.open(authUrl, '_blank');
+        }
+
+        async function testDataManagementAPI() {
+            document.getElementById('results').innerHTML = `
+                <div class="test-section warning">
+                    <h4>Testing Data Management API</h4>
+                    <p>This requires a valid access token. The OAuth flow needs to be completed first.</p>
+                    <p><strong>Endpoint:</strong> https://developer.api.autodesk.com/data/v1/hubs</p>
+                </div>
+            `;
+        }
+
+        async function testACCAPI() {
+            document.getElementById('results').innerHTML = `
+                <div class="test-section warning">
+                    <h4>Testing ACC Admin API</h4>
+                    <p>This requires a valid access token and ACC API permissions.</p>
+                    <p><strong>Endpoint:</strong> https://developer.api.autodesk.com/construction/admin/v1/accounts</p>
+                </div>
+            `;
+        }
+
+        // Show current configuration
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('results').innerHTML = `
+                <div class="test-section">
+                    <h4>Instructions</h4>
+                    <ol>
+                        <li>Click "Test OAuth Flow" to see what permissions are requested</li>
+                        <li>If you only see "Source Code" permission, your OAuth app needs to be updated</li>
+                        <li>Go to <a href="https://forge.autodesk.com/myapps" target="_blank">https://forge.autodesk.com/myapps</a></li>
+                        <li>Edit your OAuth app and enable Data Management API and Construction Cloud API</li>
+                        <li>Add the scopes: data:read, data:write, data:create, data:search, bucket:read, bucket:create, account:read</li>
+                    </ol>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

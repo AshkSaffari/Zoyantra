@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple OAuth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .warning { background-color: #fff3cd; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple OAuth Test</h1>
+    
+    <div class="section">
+        <h3>Step 1: Generate OAuth URL</h3>
+        <button onclick="generateOAuthUrl()">Generate OAuth URL</button>
+        <div id="oauthUrl"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 2: Test OAuth Flow</h3>
+        <button onclick="startOAuthFlow()">Start OAuth Flow</button>
+        <div id="oauthStatus"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 3: Check Callback</h3>
+        <button onclick="checkCallback()">Check Current Callback</button>
+        <div id="callbackStatus"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 4: Test Token Exchange</h3>
+        <button onclick="testTokenExchange()">Test Token Exchange</button>
+        <div id="tokenStatus"></div>
+    </div>
+
+    <script>
+        // Simple PKCE implementation
+        function generateCodeVerifier() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return btoa(String.fromCharCode.apply(null, array))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        async function generateCodeChallenge(verifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(verifier);
+            const digest = await crypto.subtle.digest('SHA-256', data);
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function generateOAuthUrl() {
+            const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+            const scopes = encodeURIComponent('data:read data:write bucket:read bucket:create viewables:read');
+            
+            // Generate PKCE parameters
+            const codeVerifier = generateCodeVerifier();
+            sessionStorage.setItem('oauth_code_verifier', codeVerifier);
+            
+            generateCodeChallenge(codeVerifier).then(codeChallenge => {
+                const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+                
+                document.getElementById('oauthUrl').innerHTML = `
+                    <p><strong>Generated OAuth URL:</strong></p>
+                    <pre>${authUrl}</pre>
+                    <p><strong>Code Verifier:</strong> ${codeVerifier}</p>
+                    <p><strong>Code Challenge:</strong> ${codeChallenge}</p>
+                `;
+            });
+        }
+
+        function startOAuthFlow() {
+            const clientId = 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo';
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+            const scopes = encodeURIComponent('data:read data:write bucket:read bucket:create viewables:read');
+            
+            // Generate PKCE parameters
+            const codeVerifier = generateCodeVerifier();
+            sessionStorage.setItem('oauth_code_verifier', codeVerifier);
+            
+            generateCodeChallenge(codeVerifier).then(codeChallenge => {
+                const authUrl = `https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+                
+                document.getElementById('oauthStatus').innerHTML = '<p>🔄 Opening OAuth URL...</p>';
+                
+                // Open in same window to avoid sessionStorage issues
+                window.location.href = authUrl;
+            });
+        }
+
+        function checkCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+            const errorDescription = urlParams.get('error_description');
+            
+            let status = '<h4>Callback Status:</h4>';
+            status += `<p><strong>Current URL:</strong> ${window.location.href}</p>`;
+            status += `<p><strong>Has Code:</strong> ${code ? 'Yes' : 'No'}</p>`;
+            status += `<p><strong>Has Error:</strong> ${error || 'No'}</p>`;
+            
+            if (code) {
+                status += `<p><strong>Code:</strong> ${code.substring(0, 20)}...</p>`;
+                status += '<p class="success">✅ OAuth callback successful!</p>';
+            } else if (error) {
+                status += `<p><strong>Error:</strong> ${error}</p>`;
+                status += `<p><strong>Description:</strong> ${errorDescription || 'None'}</p>`;
+                status += '<p class="error">❌ OAuth callback failed!</p>';
+            } else {
+                status += '<p class="warning">⚠️ No OAuth parameters found</p>';
+            }
+            
+            document.getElementById('callbackStatus').innerHTML = status;
+        }
+
+        async function testTokenExchange() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (!code) {
+                document.getElementById('tokenStatus').innerHTML = '<p class="error">❌ No authorization code found</p>';
+                return;
+            }
+            
+            const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
+            if (!codeVerifier) {
+                document.getElementById('tokenStatus').innerHTML = '<p class="error">❌ No code verifier found in session storage</p>';
+                return;
+            }
+            
+            document.getElementById('tokenStatus').innerHTML = '<p>🔄 Exchanging code for token...</p>';
+            
+            try {
+                const response = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        client_id: 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                        client_secret: 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                        code: code,
+                        redirect_uri: window.location.origin + '/auth/callback',
+                        code_verifier: codeVerifier
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('tokenStatus').innerHTML = `
+                        <p class="success">✅ Token exchange successful!</p>
+                        <p><strong>Access Token:</strong> ${data.access_token ? 'Present' : 'Missing'}</p>
+                        <p><strong>Refresh Token:</strong> ${data.refresh_token ? 'Present' : 'Missing'}</p>
+                        <p><strong>Expires In:</strong> ${data.expires_in} seconds</p>
+                    `;
+                } else {
+                    const errorData = await response.text();
+                    document.getElementById('tokenStatus').innerHTML = `
+                        <p class="error">❌ Token exchange failed: ${response.status}</p>
+                        <pre>${errorData}</pre>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('tokenStatus').innerHTML = `
+                    <p class="error">❌ Token exchange error: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Auto-check callback on page load
+        window.onload = function() {
+            checkCallback();
+        };
+    </script>
+</body>
+</html>

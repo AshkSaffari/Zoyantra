@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Callback Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 OAuth Callback Debug Test</h1>
+    
+    <div class="debug-section">
+        <h3>Current URL Information</h3>
+        <p><strong>Full URL:</strong> <span id="fullUrl"></span></p>
+        <p><strong>Search Params:</strong> <span id="searchParams"></span></p>
+        <p><strong>Hash:</strong> <span id="hash"></span></p>
+    </div>
+
+    <div class="debug-section">
+        <h3>OAuth Parameters</h3>
+        <p><strong>Code:</strong> <span id="code"></span></p>
+        <p><strong>Error:</strong> <span id="error"></span></p>
+        <p><strong>Error Description:</strong> <span id="errorDescription"></span></p>
+        <p><strong>State:</strong> <span id="state"></span></p>
+    </div>
+
+    <div class="debug-section">
+        <h3>Test Actions</h3>
+        <button onclick="testRedirect()">Test Redirect to Main App</button>
+        <button onclick="simulateCallback()">Simulate OAuth Callback</button>
+        <button onclick="clearSession()">Clear Session Storage</button>
+        <button onclick="testTokenExchange()">Test Token Exchange</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Display current URL information
+        document.getElementById('fullUrl').textContent = window.location.href;
+        document.getElementById('searchParams').textContent = window.location.search;
+        document.getElementById('hash').textContent = window.location.hash;
+
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        const state = urlParams.get('state');
+
+        document.getElementById('code').textContent = code ? `Present (${code.length} chars)` : 'Missing';
+        document.getElementById('error').textContent = error || 'None';
+        document.getElementById('errorDescription').textContent = errorDescription || 'None';
+        document.getElementById('state').textContent = state || 'None';
+
+        function testRedirect() {
+            if (code) {
+                document.getElementById('results').innerHTML = '<div class="debug-section success">Redirecting to main app with code...</div>';
+                window.location.href = `/?code=${code}`;
+            } else {
+                document.getElementById('results').innerHTML = '<div class="debug-section error">No OAuth code found. Cannot test redirect.</div>';
+            }
+        }
+
+        function simulateCallback() {
+            const testCode = 'test_oauth_code_12345';
+            document.getElementById('results').innerHTML = '<div class="debug-section warning">Simulating OAuth callback with test code...</div>';
+            window.location.href = `/?code=${testCode}`;
+        }
+
+        function clearSession() {
+            sessionStorage.clear();
+            localStorage.removeItem('zoyantra_credentials');
+            document.getElementById('results').innerHTML = '<div class="debug-section success">Session storage cleared!</div>';
+        }
+
+        async function testTokenExchange() {
+            if (!code) {
+                document.getElementById('results').innerHTML = '<div class="debug-section error">No OAuth code available for testing.</div>';
+                return;
+            }
+
+            document.getElementById('results').innerHTML = '<div class="debug-section warning">Testing token exchange...</div>';
+
+            try {
+                const response = await fetch('https://developer.api.autodesk.com/authentication/v2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        client_id: 'ilzOKY6UAvIWTzwnOIC73cjd3rRxy5CfFx0S6a01Mzc4VKWo',
+                        client_secret: 'fwAMvFSSo7TsrYA1TVzqRnxt2j7j2kCNtmbOkgO2rau4HBjfaUXUn0u3FsQbpOBa',
+                        code: code,
+                        redirect_uri: 'http://localhost:3000/auth/callback',
+                        code_verifier: 'test_code_verifier' // This should be the actual PKCE verifier
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('results').innerHTML = `
+                        <div class="debug-section success">
+                            <h4>Token Exchange Successful!</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <div class="debug-section error">
+                            <h4>Token Exchange Failed</h4>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="debug-section error">
+                        <h4>Token Exchange Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-test if we have a code
+        if (code) {
+            setTimeout(() => {
+                document.getElementById('results').innerHTML = '<div class="debug-section warning">Auto-testing redirect...</div>';
+                testRedirect();
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
