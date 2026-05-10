@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "zoyantra",
+  "installCommand": "npm install --no-fund --no-audit",
   "builds": [
     {
       "src": "server.js",

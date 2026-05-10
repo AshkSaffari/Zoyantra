@@ -98,14 +98,25 @@ function resolveCostRegion(req, fallback = 'US') {
   return fallback;
 }
 
+/** APS routing: Australia is AUS; APAC is legacy and should not be sent as x-ads-region. */
+function toXAdsRegion(region) {
+  const r = (region || 'US').toString().trim().toUpperCase();
+  if (!r || r === 'US' || r === 'USA') return null;
+  if (r === 'APAC' || r === 'AUS' || r === 'AU') return 'AUS';
+  if (r === 'EMEA' || r === 'EU' || r === 'UK') return 'EMEA';
+  if (['CAN', 'DEU', 'GBR', 'IND', 'JPN'].includes(r)) return r;
+  return null;
+}
+
 function buildAutodeskHeaders(accessToken, region, includeRegion = true) {
   const headers = {
     'Authorization': `Bearer ${accessToken}`,
     'Content-Type': 'application/json'
   };
 
-  if (includeRegion && region && region !== 'US') {
-    headers['x-ads-region'] = region;
+  if (includeRegion) {
+    const x = toXAdsRegion(region);
+    if (x) headers['x-ads-region'] = x;
   }
 
   return headers;
@@ -1844,9 +1855,9 @@ app.get('/api/acc/admin/accounts/:accountId/projects', async (req, res) => {
       'Authorization': authHeader,
       'Accept': 'application/json'
     };
-    if (region) {
-      headers['Region'] = region; // Official header for routing
-      headers['x-ads-region'] = region; // Fallback for legacy routing
+    const xAds = toXAdsRegion(region);
+    if (xAds) {
+      headers['x-ads-region'] = xAds;
     }
     // Optional: forward User-Id header if provided
     const userIdHeader = req.headers['user-id'] || req.headers['User-Id'] || req.headers['userId'];

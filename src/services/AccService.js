@@ -155,6 +155,7 @@ class AccService {
   async detectRegion(hubId) {
     try {
       console.log(`🔍 Detecting region for hub: ${hubId}`);
+      const hubKey = (hubId || '').replace(/^b\./i, '').toLowerCase();
       
       // ACC hub and project handling
       const knownHubs = [
@@ -167,16 +168,15 @@ class AccService {
       ];
       
       // Check for known projects
-      if (knownProjects.includes(hubId) || knownProjects.includes(hubId.toLowerCase())) {
+      if (knownProjects.includes(hubKey) || knownProjects.includes(hubId?.toLowerCase?.() || '')) {
         console.log('🏗️ Known ACC project detected - using US region');
         this.setRegion('US');
         return 'US';
       }
       
-      if (knownHubs.includes(hubId) || knownHubs.includes(hubId.toLowerCase())) {
+      if (knownHubs.includes(hubKey) || knownHubs.includes(hubId?.toLowerCase?.() || '')) {
         // Specific override: CEWA hub is APAC
-        const clean = hubId.toLowerCase();
-        if (clean.includes('ddc5f6e2-9ddc-475e-82ed-b05da4ac18c2')) {
+        if (hubKey.includes('ddc5f6e2-9ddc-475e-82ed-b05da4ac18c2')) {
           console.log('🏗️ CEWA hub detected - using APAC region');
           this.setRegion('APAC');
           return 'APAC';
@@ -2004,16 +2004,17 @@ class AccService {
     
     // For now, try direct request only (CORS proxies are problematic with Authorization headers)
     try {
-      // Only include region header for direct Construction API calls that expect it.
-      // Project/Data Management APIs should NOT receive a region header, or it may misroute.
-      const isConstructionApi = !isProxyRoute && baseUrl.includes('/construction/');
+      // Regional ACC/APS calls must use x-ads-region (not "region"). APAC → AUS per APS guidance.
+      const isAutodeskHost =
+        !isProxyRoute && baseUrl.includes('developer.api.autodesk.com');
+      const xAds = isAutodeskHost ? AccService.toXAdsRegion(this.region) : null;
 
       const options = {
         method,
         headers: {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json',
-          ...(isConstructionApi ? { 'region': this.region } : {}),
+          ...(xAds ? { 'x-ads-region': xAds } : {}),
         },
       };
 
@@ -2222,6 +2223,19 @@ class AccService {
     return r === 'UNKNOWN' ? 'Unknown' : r;
   }
 
+  /**
+   * APS / ACC regional routing uses x-ads-region. APAC is legacy; Australia is AUS.
+   * @returns {string|null} Header value, or null to omit (US default).
+   */
+  static toXAdsRegion(region) {
+    const r = (region || '').toString().trim().toUpperCase();
+    if (!r || r === 'US' || r === 'USA') return null;
+    if (r === 'APAC' || r === 'AUS' || r === 'AU') return 'AUS';
+    if (r === 'EMEA' || r === 'EU' || r === 'UK') return 'EMEA';
+    if (['CAN', 'DEU', 'GBR', 'IND', 'JPN'].includes(r)) return r;
+    return null;
+  }
+
   // Enhanced method to get hub region with display info
   static getHubRegionInfo(hub) {
     const region = AccService.normalizeRegion(
@@ -2312,6 +2326,7 @@ class AccService {
   }
 
   async getProjects(hubId) {
+    const regionBeforeGetProjects = this.region;
     try {
       // Validate hubId
       if (!hubId) {
@@ -2475,7 +2490,97 @@ class AccService {
       return [];
       } catch (standardError) {
         console.error('❌ Standard approach failed:', standardError.message);
-        
+
+        // APAC / AUS hubs often need x-ads-region; default US routing can 403/404.
+        const errText = `${standardError.message || ''}`;
+        const retryable =
+          errText.includes('403') ||
+          errText.includes('404') ||
+          errText.includes('400') ||
+          errText.includes('HTTP 4');
+        if (retryable) {
+          const regionsToTry = ['AUS', 'APAC', 'EMEA', 'US'].filter(
+            (r, i, a) => a.indexOf(r) === i
+          );
+          for (const tryReg of regionsToTry) {
+            try {
+              console.log(`🔄 Retrying project list with x-ads-region via setRegion(${tryReg})`);
+              this.setRegion(tryReg);
+              const response = await this.makeRequest(
+                `/project/v1/hubs/${hubId}/projects`
+              );
+              console.log('✅ getProjects succeeded after region retry:', tryReg);
+              if (response.data) {
+                return response.data.map((project) => ({
+                  id: project.id,
+                  name:
+                    project.attributes?.name || project.name || 'Unnamed Project',
+                  type:
+                    project.attributes?.extension?.type ||
+                    project.type ||
+                    'projects:autodesk.acc:Project',
+                  jobNumber:
+                    project.attributes?.jobNumber || project.jobNumber,
+                  status: project.attributes?.status || project.status,
+                  description:
+                    project.attributes?.description || project.description,
+                  startDate: project.startDate || project.attributes?.startDate,
+                  endDate: project.endDate || project.attributes?.endDate,
+                  createdAt: project.createdAt || project.attributes?.createdAt,
+                  updatedAt: project.updatedAt || project.attributes?.updatedAt,
+                  classification: project.classification,
+                  projectValue: project.projectValue,
+                  addressLine1: project.addressLine1,
+                  city: project.city,
+                  stateOrProvince: project.stateOrProvince,
+                  country: project.country,
+                  constructionType: project.constructionType,
+                  deliveryMethod: project.deliveryMethod,
+                  contractType: project.contractType,
+                  currentPhase: project.currentPhase,
+                  memberCount: project.memberCount,
+                  companyCount: project.companyCount,
+                }));
+              }
+              if (Array.isArray(response)) {
+                return response.map((project) => ({
+                  id: project.id,
+                  name:
+                    project.attributes?.name || project.name || 'Unnamed Project',
+                  type:
+                    project.attributes?.extension?.type ||
+                    project.type ||
+                    'projects:autodesk.acc:Project',
+                  jobNumber:
+                    project.attributes?.jobNumber || project.jobNumber,
+                  status: project.attributes?.status || project.status,
+                  description:
+                    project.attributes?.description || project.description,
+                  startDate: project.startDate || project.attributes?.startDate,
+                  endDate: project.endDate || project.attributes?.endDate,
+                  createdAt: project.createdAt || project.attributes?.createdAt,
+                  updatedAt: project.updatedAt || project.attributes?.updatedAt,
+                  classification: project.classification,
+                  projectValue: project.projectValue,
+                  addressLine1: project.addressLine1,
+                  city: project.city,
+                  stateOrProvince: project.stateOrProvince,
+                  country: project.country,
+                  constructionType: project.constructionType,
+                  deliveryMethod: project.deliveryMethod,
+                  contractType: project.contractType,
+                  currentPhase: project.currentPhase,
+                  memberCount: project.memberCount,
+                  companyCount: project.companyCount,
+                }));
+              }
+            } catch (retryErr) {
+              console.log(`⚠️ Region retry ${tryReg} failed:`, retryErr.message);
+            }
+          }
+          this.setRegion(regionBeforeGetProjects);
+        }
+
         // If it's a 403 error, provide specific guidance
         if (standardError.message.includes('403')) {
           console.error('🚫 Access denied to this hub');
@@ -2490,6 +2595,7 @@ class AccService {
         throw standardError;
       }
     } catch (error) {
+      this.setRegion(regionBeforeGetProjects);
       console.error('Error fetching projects:', error);
       
       // If it's a 403 error for a known APAC hub, provide specific guidance
